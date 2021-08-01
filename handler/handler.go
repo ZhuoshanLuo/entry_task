@@ -3,6 +3,7 @@ package handler
 import (
 	"database/sql"
 	"example.com/greetings/codes"
+	"example.com/greetings/constant"
 	"example.com/greetings/dao"
 	main2 "example.com/greetings/dir1"
 	"example.com/greetings/globalVariable"
@@ -10,6 +11,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"regexp"
 	"time"
 )
 
@@ -79,30 +81,23 @@ func CheckErr(err error) {
 //用户注册接口
 func Register(c *gin.Context) {
 	//提取请求参数
-	var regReq model.RegisterRequest
-	c.BindJSON(&regReq)
-	name, passwd, email, avatar := regReq.Name, regReq.Passwd, regReq.Email, regReq.Avatar
+	var req model.RegisterRequest
+	c.BindJSON(&req)
+	name, passwd, email, avatar := req.Name, req.Passwd, req.Email, req.Avatar
 
 	//传入的用户名、密码和邮箱不能为空或不符合pattern（头像可为空）
-	//isMatch1, _ := regexp.MatchString(constant.NamePattern, name)
-	//isMatch2, _ := regexp.MatchString(constant.PasswdPattern, passwd)
-	//|| !isMatch1 || !isMatch2
-	if name == "" || passwd == "" || email == "" {
-		res := model.Response{
-			Code: codes.Fail,
-			Msg:  codes.Errorf(codes.Fail),
-		}
+	isMatch1, _ := regexp.MatchString(constant.NamePattern, name)
+	isMatch2, _ := regexp.MatchString(constant.PasswdPattern, passwd)
+	if name == "" || passwd == "" || email == "" || !isMatch1 || !isMatch2 {
+		res := ResponseFun(codes.Fail, nil)
 		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
 		return
 	}
 
-	//user表中用户名和邮箱不能存在
-	isExist := dao.QueryUserIsExist(name, email)
-	if isExist {
-		res := model.Response{
-			Code: codes.Fail,
-			Msg:  codes.Errorf(codes.Fail),
-		}
+	//用户已经存在
+	isRegister := dao.QueryUserIsRegister(name, email)
+	if isRegister {
+		res := ResponseFun(codes.Fail, nil)
 		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
 		return
 	}
@@ -110,83 +105,124 @@ func Register(c *gin.Context) {
 	//插入数据到user表中
 	var user model.User
 	user.Name, user.Avatar, user.Email = name, avatar, email
-	user.Id = CreateId(name)
 	user.Passwd = AddSalt(passwd)
 	user.IsAdmin = false
 	user.CreatedAt = GetTime()
+	err := dao.InsertUser(user)
 
-	dao.InsertUser(user)
-	res := model.Response{
-		Code: codes.OK,
-		Msg:  codes.Errorf(codes.OK),
+	//插入数据库时发生错误
+	if err != nil {
+		res := ResponseFun(codes.Fail, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		return
 	}
+
+	//注册成功
+	res := ResponseFun(codes.OK, nil)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
 }
 
 //用户登陆接口
 func Login(c *gin.Context) {
 	//提取请求参数
-	var loginReq model.LoginRequest
-	c.BindJSON(&loginReq)
-	name, passwd := loginReq.Name, loginReq.Passwd
+	var req model.LoginRequest
+	c.BindJSON(&req)
+	name, reqPasswd := req.Name, req.Passwd
 
 	//传入的用户名和密码不能为空
-	if name == "" || passwd == "" {
-		res := model.Response{
-			Code: codes.Fail,
-			Msg:  codes.Errorf(codes.Fail),
-		}
+	if name == "" || reqPasswd == "" {
+		res := ResponseFun(codes.Fail, nil)
 		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
 		return
 	}
 
-	//查看mysql，用户名或密码错误，登陆失败
-	passwd = AddSalt(passwd) //密码加盐
-	userId, err := dao.QueryIdFromUsertabWithName(name)
+	reqPasswd = AddSalt(reqPasswd) //密码加盐
+	userId, passwd, err := dao.QueryUserIsExist(name)
+	//用户不存在
 	if err == sql.ErrNoRows {
-		res := model.Response{
-			Code: codes.Fail,
-			Msg:  codes.Errorf(codes.Fail),
-		}
+		res := ResponseFun(codes.Fail, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		return
+	}
+	//密码错误
+	if reqPasswd != passwd {
+		res := ResponseFun(codes.Fail, nil)
 		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
 		return
 	}
 
-	//登陆成功，保存并返回session id
+	//插入session数据库
 	var session model.Session
-	session.SessionId = CreateId(string(userId))
-	dao.InsertSession(session.SessionId, userId)
-	res := model.Response{
-		Code: codes.OK,
-		Msg:  codes.Errorf(codes.OK),
-		Data: session,
+	session.Id = CreateSessionId(string(userId))
+	session.UserId = userId
+	err = dao.InsertSession(session)
+	//数据库插入时出错
+	if err != nil {
+		res := ResponseFun(codes.Fail, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		return
 	}
+	//登陆成功，返回sessoin
+	res := ResponseFun(codes.Fail, session.Id)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
 }
 
 func Show_activities(c *gin.Context) {
 	var req model.ShowActivityRequest
 	c.BindJSON(&req)
-	user_id := req.UserId
+	sessionId, page := req.SessionId, req.Page
 
-	//获取活动表的所有行
-	rows := dao.GetALLActivityRows()
+	//如果用户是登陆状态，传入sessionId不为空
+	var userId uint
+	var err error
+	if sessionId != ""{
+		userId, err = dao.QueryUserId(sessionId)
+		//数据库执行时错误
+		if err != nil {
+			res := ResponseFun(codes.Fail, nil)
+			c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+			return
+		}
+		//参数错误，没有登陆
+		if err == sql.ErrNoRows {
+			res := ResponseFun(codes.Fail, nil)
+			c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+			return
+		}
+	}
 
+	//获取活动表的当前page
+	rows, err := dao.GetALLActivityRows(page)
+	//查询时出错
+	if err != nil {
+		res := ResponseFun(codes.Fail, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		return
+	}
+
+	//构建返回数据
 	var objects []model.ShowActivitiesRes
 	for rows.Next() {
 		var actId uint
 		var act model.ShowActivitiesRes
 		rows.Scan(&actId, &act.Title, &act.Start, &act.End)
-		act.JoinStatus = dao.IsJoinin(user_id, actId)
+
+		if req.SessionId != ""{
+			act.JoinStatus, err = dao.IsJoinin(userId, actId)
+			if err != nil {
+				res := ResponseFun(codes.Fail, nil)
+				c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+				return
+			}
+		}else{
+			act.JoinStatus = false
+		}
 
 		objects = append(objects, act)
 	}
 
-	res := model.Response{
-		Code: codes.OK,
-		Msg:  codes.Errorf(codes.OK),
-		Data: objects,
-	}
+	//处理完成，返回活动列表objects
+	res := ResponseFun(codes.Fail, objects)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
 }
 
@@ -249,7 +285,6 @@ func Create_comment(c *gin.Context) {
 
 	//将数据插入comment表中
 	var comment model.Comment
-	comment.Id = CreateId("")
 	comment.CreatedAt = GetTime()
 	comment.UserId, comment.ActivityId, comment.Content = userId, activityId, content
 	err := dao.InsertComment(comment)

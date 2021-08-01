@@ -2,12 +2,13 @@ package dao
 
 import (
 	"database/sql"
+	"example.com/greetings/constant"
 	"example.com/greetings/globalVariable"
 	"example.com/greetings/model"
 	"fmt"
 )
 
-func QueryUserIsExist(name string, email string) bool {
+func QueryUserIsRegister(name string, email string) bool {
 	str := fmt.Sprintf("select * from user_tab where name='%s' or email='%s'", name, email)
 	row, _ := globalVariable.DB.Query(str)
 	if row.Next() {
@@ -16,43 +17,40 @@ func QueryUserIsExist(name string, email string) bool {
 	return false
 }
 
-func InsertUser(user model.User) {
-	str := fmt.Sprintf("insert into user_tab(id, name, passwd, email, Image, is_admin, created_at) values (%d, '%s', '%s', '%s', '%s', %t, %d)", user.Id, user.Name, user.Passwd, user.Email, user.Avatar, user.IsAdmin, user.CreatedAt)
+func InsertUser(user model.User) error{
+	str := fmt.Sprintf("insert into user_tab(id, name, passwd, email, Image, is_admin, created_at) values ('%s', '%s', '%s', '%s', %t, %d)", user.Name, user.Passwd, user.Email, user.Avatar, user.IsAdmin, user.CreatedAt)
 	_, err := globalVariable.DB.Exec(str)
-	if err != nil {
-		return 
-	}
+	return err
 }
 
-func QueryIdFromUsertabWithName(name string) (uint, error) {
+func QueryUserIsExist(name string) (uint, string, error) {
 	var userId uint
-	str := fmt.Sprintf("select id from user_tab where name='%s'", name)
-	err := globalVariable.DB.QueryRow(str).Scan(&userId)
-	return userId, err
+	var passwd string
+	str := fmt.Sprintf("select id, passwd from user_tab where name='%s'", name)
+	err := globalVariable.DB.QueryRow(str).Scan(&userId, &passwd)
+	return userId, passwd, err
 }
 
-func InsertSession(sessionId uint, userId uint) {
-	str := fmt.Sprintf("insert into session_tab(id, user_id) values(%d, %d)", sessionId, userId)
-	globalVariable.DB.Exec(str)
+func InsertSession(session model.Session) error{
+	str := fmt.Sprintf("insert into session_tab(id, user_id) values(%d, %d)", session.Id, session.UserId)
+	_, err := globalVariable.DB.Exec(str)
+	return err
 }
 
-func GetALLActivityRows() *sql.Rows {
-	str := fmt.Sprintf("select id, title, start_time, end_time from activities_tab")
-	rows, _ := globalVariable.DB.Query(str)
-	return rows
+func GetALLActivityRows(page uint) (*sql.Rows,error) {
+	offset := page * 10
+	str := fmt.Sprintf("select id, title, start_time, end_time from activities_tab limit %d offset %d", constant.Limit, offset)
+	rows, err := globalVariable.DB.Query(str)
+	return rows, err
 }
 
-func IsJoinin(userId string, actId uint) uint {
+func IsJoinin(userId uint, actId uint) (bool, error) {
 	str := fmt.Sprintf("select * from form_tab where activity_id=%d and user_id=%d", actId, userId)
-	if userId != "" {
-		row, _ := globalVariable.DB.Query(str)
-		if row.Next() == false {
-			return 0
-		} else {
-			return 1
-		}
+	row, err := globalVariable.DB.Query(str)
+	if row.Next() {
+		return true, err
 	}
-	return 0
+	return false, err
 }
 
 func GetUserIdFromSession(sessionId uint) uint {
@@ -69,4 +67,11 @@ func InsertComment(obj model.Comment) error {
 		return err
 	}
 	return nil
+}
+
+func QueryUserId(sessionId string) (uint, error){
+	var userId uint
+	str := fmt.Sprintf("select user_id from session_tab where session_id=%s", sessionId)
+	err := globalVariable.DB.QueryRow(str).Scan(&userId)
+	return userId, err
 }

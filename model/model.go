@@ -2,6 +2,14 @@ package model
 
 import "example.com/greetings/codes"
 
+type Config struct {
+	Driver   string `yaml:"driver"`
+	SqlUser  string `yaml:"sqlUser"`
+	Passwd   string `yaml:"passwd"`
+	Host     string `yaml:"host"`
+	Database string `yaml:"database"`
+}
+
 //结构体
 type Response struct {
 	Code codes.Code  `json:"code"`
@@ -10,7 +18,8 @@ type Response struct {
 }
 
 type Session struct {
-	SessionId uint `json:"sessionId"`
+	Id     uint `json:"id"`
+	UserId uint `json:"userId"`
 }
 
 type Activity struct {
@@ -32,11 +41,12 @@ type UserMsg struct {
 }
 
 type User struct {
-	Id        uint   `json:"id"`
-	Passwd    string `json:"passwd"`
+	Name      string `json:"name"`
+	Passwd    string `json:"Passwd"`
+	Email     string `json:"email"`
+	Avatar    string `json:"image"`
 	IsAdmin   bool   `json:"IsAdmin"`
 	CreatedAt uint   `json:"createdAt"`
-	UserMsg
 }
 
 type CommentMsg struct {
@@ -55,8 +65,10 @@ type Comment struct {
 
 //显示所有活动的返回值
 type ShowActivitiesRes struct {
-	Activity
-	JoinStatus uint `json:"status"`
+	Title      string `json:"title"`
+	Start      uint   `json:"start"`
+	End        uint   `json:"end"`
+	JoinStatus bool   `json:"status"`
 }
 
 //活动选择器函数的返回值
@@ -72,22 +84,23 @@ type ADetailStruct struct {
 
 type RegisterRequest struct {
 	Name   string `json:"name"`
-	Passwd string `json:"passwd"`
+	Passwd string `json:"Passwd"`
 	Email  string `json:"email"`
 	Avatar string `json:"image"`
 }
 
 type LoginRequest struct {
 	Name   string `json:"name"`
-	Passwd string `json:"passwd"`
+	Passwd string `json:"Passwd"`
 }
 
 type ShowActivityRequest struct {
-	UserId string `json:"userId"`
+	SessionId string `json:"sessionId"`
+	Page      uint   `json:"page"`
 }
 
 type CreateCommentRequest struct {
-	Session
+	SessionId  uint   `json:"sessionId"`
 	ActivityId uint   `json:"activityId"`
 	Content    string `json:"content"`
 }

@@ -2,9 +2,9 @@ package main
 
 import (
 	"database/sql"
-	"example.com/greetings/constant"
 	"example.com/greetings/globalVariable"
 	"example.com/greetings/handler"
+	"example.com/greetings/model"
 	"fmt"
 	"github.com/gin-gonic/gin"
 )
@@ -13,8 +13,10 @@ import (
 func main() {
 	r := gin.Default()
 
-	sqlStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", constant.SqlUser, constant.Passwd, constant.Host, constant.Database)
-	globalVariable.DB, _ = sql.Open(constant.Driver, sqlStr)
+	var conf model.Config
+	handler.GetConf(&conf)
+	sqlStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", conf.SqlUser, conf.Passwd, conf.Host, conf.Database)
+	globalVariable.DB, _ = sql.Open(conf.Driver, sqlStr)
 	globalVariable.DB.SetConnMaxLifetime(200)
 	globalVariable.DB.SetMaxIdleConns(10)
 	defer globalVariable.DB.Close()
