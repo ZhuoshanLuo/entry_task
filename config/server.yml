@@ -1,0 +1,8 @@
+---
+
+db:
+  driver: "mysql"
+  sqlUser: "root"
+  passwd: "Luo2566288"
+  host: "127.0.0.1:3306"
+  database: "et_db"
