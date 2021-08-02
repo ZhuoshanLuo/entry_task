@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -68,10 +69,6 @@ func Activity_info(c *gin.Context) {
 	c.JSON(http.StatusOK, ad)
 }
 
-func Query_activity_selector(act_type, start, end string) string {
-	return ""
-}
-
 func CheckErr(err error) {
 	if err != nil {
 		fmt.Printf("CheckErr:%v", err)
@@ -89,16 +86,16 @@ func Register(c *gin.Context) {
 	isMatch1, _ := regexp.MatchString(constant.NamePattern, name)
 	isMatch2, _ := regexp.MatchString(constant.PasswdPattern, passwd)
 	if name == "" || passwd == "" || email == "" || !isMatch1 || !isMatch2 {
-		res := ResponseFun(codes.Fail, nil)
-		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		res := ResponseFun(codes.MissParameter, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MissParameter,), res)
 		return
 	}
 
 	//用户已经存在
 	isRegister := dao.QueryUserIsRegister(name, email)
 	if isRegister {
-		res := ResponseFun(codes.Fail, nil)
-		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		res := ResponseFun(codes.UserExist, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.UserExist), res)
 		return
 	}
 
@@ -112,8 +109,8 @@ func Register(c *gin.Context) {
 
 	//插入数据库时发生错误
 	if err != nil {
-		res := ResponseFun(codes.Fail, nil)
-		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
 		return
 	}
 
@@ -131,8 +128,8 @@ func Login(c *gin.Context) {
 
 	//传入的用户名和密码不能为空
 	if name == "" || reqPasswd == "" {
-		res := ResponseFun(codes.Fail, nil)
-		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		res := ResponseFun(codes.MissParameter, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MissParameter), res)
 		return
 	}
 
@@ -140,14 +137,14 @@ func Login(c *gin.Context) {
 	userId, passwd, err := dao.QueryUserIsExist(name)
 	//用户不存在
 	if err == sql.ErrNoRows {
-		res := ResponseFun(codes.Fail, nil)
-		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		res := ResponseFun(codes.UserNotExist, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.UserNotExist), res)
 		return
 	}
 	//密码错误
 	if reqPasswd != passwd {
-		res := ResponseFun(codes.Fail, nil)
-		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		res := ResponseFun(codes.PassWordError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.PassWordError), res)
 		return
 	}
 
@@ -158,16 +155,17 @@ func Login(c *gin.Context) {
 	err = dao.InsertSession(session)
 	//数据库插入时出错
 	if err != nil {
-		res := ResponseFun(codes.Fail, nil)
-		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
 		return
 	}
 	//登陆成功，返回sessoin
-	res := ResponseFun(codes.Fail, session.Id)
+	res := ResponseFun(codes.OK, session.Id)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
 }
 
-func Show_activities(c *gin.Context) {
+//显示所有活动
+func ShowActivities(c *gin.Context) {
 	var req model.ShowActivityRequest
 	c.BindJSON(&req)
 	sessionId, page := req.SessionId, req.Page
@@ -179,14 +177,14 @@ func Show_activities(c *gin.Context) {
 		userId, err = dao.QueryUserId(sessionId)
 		//数据库执行时错误
 		if err != nil {
-			res := ResponseFun(codes.Fail, nil)
-			c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+			res := ResponseFun(codes.MysqlError, nil)
+			c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
 			return
 		}
 		//参数错误，没有登陆
 		if err == sql.ErrNoRows {
-			res := ResponseFun(codes.Fail, nil)
-			c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+			res := ResponseFun(codes.NotLogin, nil)
+			c.JSON(codes.HTTPStatusFromCode(codes.NotLogin), res)
 			return
 		}
 	}
@@ -195,8 +193,8 @@ func Show_activities(c *gin.Context) {
 	rows, err := dao.GetALLActivityRows(page)
 	//查询时出错
 	if err != nil {
-		res := ResponseFun(codes.Fail, nil)
-		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
 		return
 	}
 
@@ -210,8 +208,8 @@ func Show_activities(c *gin.Context) {
 		if req.SessionId != ""{
 			act.JoinStatus, err = dao.IsJoinin(userId, actId)
 			if err != nil {
-				res := ResponseFun(codes.Fail, nil)
-				c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+				res := ResponseFun(codes.MysqlError, nil)
+				c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
 				return
 			}
 		}else{
@@ -222,120 +220,139 @@ func Show_activities(c *gin.Context) {
 	}
 
 	//处理完成，返回活动列表objects
-	res := ResponseFun(codes.Fail, objects)
+	res := ResponseFun(codes.OK, objects)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
 }
 
-func Activities_selector(c *gin.Context) {
-	json := make(map[string]interface{})
-	c.BindJSON(&json)
-	req_type_id := json["type_id"].(string)
-	req_start_time := json["start_time"].(string)
-	req_end_time := json["end_time"].(string)
-	user_id := json["user_id"].(string)
+//活动过滤器
+func ActivitiesSelector(c *gin.Context) {
+	var req model.ActivitySelectorRequest
+	c.BindJSON(&req)
+	sessionId, actType, start, end, page := req.SessionId, req.Type, req.Start, req.End, req.Page
 
-	//封装sql语句，得到符合条件的活动
-	//返回包括type_id、title、start_time、end_time
-	str := Query_activity_selector(req_type_id, req_start_time, req_end_time)
-	rows, _ := globalVariable.DB.Query(str)
+	//如果用户是登陆状态，获取user_id
+	var userId uint
+	var err error
+	if sessionId != ""{
+		userId, err = dao.QueryUserId(sessionId)
+		if err != nil {
+			res := ResponseFun(codes.MysqlError, nil)
+			c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+			return
+		}
+	}
+
+	//封装sql语句，得到符合条件的活动的行
+	rows, err := dao.SqlActivitiesSelector(actType, start, end, page)
+	if err != nil {
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+		return
+	}
 
 	//遍历等到activity_selector的id、type_id、title、start_time、end_time
-	var act_id uint
-	var type_id uint
-	var objects []main2.Activity_select
+	var actId uint
+	var objects []model.ActivitySelectorResponse
 	for rows.Next() {
-		var as main2.Activity_select
-		rows.Scan(&act_id, &type_id, &as.Title, &as.Start_time, &as.End_time)
+		var act model.ActivitySelectorResponse
+		rows.Scan(&actId, &act.Title, &act.Start, &act.End)
 
-		//根据type_id查询活动类型
-		str = "select name from activities_type_tab where id=" + string(type_id)
-		globalVariable.DB.QueryRow(str).Scan(&as.Type_name)
-
-		//根据user_id查询form_tab是否参加活动
-		str = "select * from form_tab where id=" + string(act_id) + " and user_id=" + user_id
-		_, err := globalVariable.DB.Query(str)
-		if err == sql.ErrNoRows {
-			as.Join_status = 0
-		} else {
-			as.Join_status = 1
+		//是否参加活动
+		if sessionId != "" {
+			uintSessionId, _ := strconv.Atoi(sessionId)
+			act.JoinStatus, err = dao.IsJoinin(userId, uint(uintSessionId))
+			if err != nil {
+				res := ResponseFun(codes.MysqlError, nil)
+				c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+				return
+			}
+		}else{
+			act.JoinStatus = false
 		}
 
-		objects = append(objects, as)
+		objects = append(objects, act)
 	}
-	c.JSON(http.StatusOK, objects)
+	res := ResponseFun(codes.OK, objects)
+	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
 }
 
-func Create_comment(c *gin.Context) {
+//发表评论
+func CreateComment(c *gin.Context) {
 	var req model.CreateCommentRequest
 	c.BindJSON(&req)
 	sessionId, activityId, content := req.SessionId, req.ActivityId, req.Content
 
 	//传入内容不能为空
-	if string(sessionId) == "" || string(activityId) == "" || content == "" {
-		res := model.Response{
-			Code: codes.Fail,
-			Msg:  codes.Errorf(codes.Fail),
-		}
-		c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
+	if sessionId == "" || string(activityId) == "" || content == "" {
+		res := ResponseFun(codes.MissParameter, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MissParameter), res)
 		return
 	}
 
-	//从session表中获取用户user id
-	userId := dao.GetUserIdFromSession(sessionId)
+	//从session表中获取用户user id，查询不到session id对应的用户时也会报错
+	userId, err := dao.QueryUserId(sessionId)
+	//数据库查表时出错
+	if err != nil {
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+		return
+	}
 
 	//将数据插入comment表中
 	var comment model.Comment
-	comment.CreatedAt = GetTime()
 	comment.UserId, comment.ActivityId, comment.Content = userId, activityId, content
-	err := dao.InsertComment(comment)
+	comment.CreatedAt = GetTime()
+	err = dao.InsertComment(comment)
+	//插入数据库表时出错
 	if err != nil {
-		res := model.Response{
-			Code: codes.Fail,
-			Msg:  codes.Errorf(codes.Fail),
-		}
-		c.JSON(codes.HTTPStatusFromCode(codes.Fail), res)
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
 		return
 	}
-	res := model.Response{
-		Code: codes.OK,
-		Msg:  codes.Errorf(codes.OK),
-	}
+
+	res := ResponseFun(codes.OK, nil)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
 }
 
-//显示活动的所有评论，暂不考虑多级评论和评论分页
-func Comments(c *gin.Context) {
-	json := make(map[string]interface{})
-	c.BindJSON(&json)
-	activity_id := json["activity_id"].(string)
+//显示活动的所有评论
+func CommentsList(c *gin.Context) {
+	var req model.CommentListRequest
+	c.BindJSON(&req)
+	actId, page := req.ActivityId, req.Page
 
-	//活动的id是必须的
-	if activity_id == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 1,
-			"msg":  "activity id is null!",
-		})
+	//缺少活动的id参数
+	if actId == "" {
+		res := ResponseFun(codes.MissParameter, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MissParameter), res)
 		return
 	}
 
 	//在comment_tab表中获取user_id、content、created_time
-	//遍历查询结果，根据user_id在user_tab中得到用户name
-	str := "select user_id, content, created_at from comments_tab where activity_id=" + activity_id
-	rows, _ := globalVariable.DB.Query(str)
+	rows, err := dao.QueryCommentMsg(actId, page)
+	if err != nil {
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+		return
+	}
 
-	var user_id uint
-	var objects []main2.Comment
+	var userId uint
+	var objects []model.CommentListResponse
 	for rows.Next() {
-		var obj main2.Comment
-		rows.Scan(&user_id, &obj.Content, &obj.Created_time)
+		var obj model.CommentListResponse
+		rows.Scan(&userId, &obj.Content, &obj.CreatedAt)
 
-		str = "select name from user_tab where id=" + string(user_id)
-		globalVariable.DB.QueryRow(str).Scan(obj.User_name)
+		obj.Name, err = dao.QueryUserName(userId)
+		if err != nil {
+			res := ResponseFun(codes.MysqlError, nil)
+			c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+			return
+		}
 
 		objects = append(objects, obj)
 	}
 
-	c.JSON(http.StatusOK, objects)
+	res := ResponseFun(codes.OK, objects)
+	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
 }
 
 func Joined_activities_view(c *gin.Context) {

@@ -1,5 +1,3 @@
----
-
 db:
   driver: "mysql"
   sqlUser: "root"

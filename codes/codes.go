@@ -5,14 +5,26 @@ import "net/http"
 type Code uint32
 
 const (
-	OK   Code = 0
-	Fail Code = 1
+	OK            Code = 0
+	Fail          Code = 1
+	MissParameter Code = 2
+	UserExist     Code = 3
+	MysqlError    Code = 4
+	UserNotExist  Code = 5
+	PassWordError Code = 6
+	NotLogin      Code = 7
 )
 
 func HTTPStatusFromCode(code Code) int {
 	codes := map[Code]int{
-		OK:   http.StatusOK,
-		Fail: http.StatusBadRequest,
+		OK:            http.StatusOK,
+		Fail:          http.StatusBadRequest,
+		MissParameter: http.StatusBadRequest,
+		UserExist:     http.StatusBadRequest,
+		MysqlError:    http.StatusInternalServerError,
+		UserNotExist:  http.StatusBadRequest,
+		PassWordError: http.StatusBadRequest,
+		NotLogin:      http.StatusBadRequest,
 	}
 	return codes[code]
 }
@@ -21,9 +33,21 @@ func Errorf(code Code) string {
 	var codeMsg string
 	switch code {
 	case OK:
-		codeMsg = "SUCCESS!"
+		codeMsg = "Success!"
 	case Fail:
-		codeMsg = "FAIL!"
+		codeMsg = "Fail!"
+	case MissParameter:
+		codeMsg = "Parameters missing or format error!"
+	case UserExist:
+		codeMsg = "User have exist!"
+	case MysqlError:
+		codeMsg = "Accessing the database error!"
+	case UserNotExist:
+		codeMsg = "User is not exist!"
+	case PassWordError:
+		codeMsg = "Password error!"
+	case NotLogin:
+		codeMsg = "User not login!"
 	}
 	return codeMsg
 }

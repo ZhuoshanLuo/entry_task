@@ -56,7 +56,6 @@ type CommentMsg struct {
 }
 
 type Comment struct {
-	Id         uint   `json:"id"`
 	UserId     uint   `json:"userId"`
 	ActivityId uint   `json:"activityId"`
 	Content    string `json:"content"`
@@ -100,7 +99,33 @@ type ShowActivityRequest struct {
 }
 
 type CreateCommentRequest struct {
-	SessionId  uint   `json:"sessionId"`
+	SessionId  string `json:"sessionId"`
 	ActivityId uint   `json:"activityId"`
 	Content    string `json:"content"`
+}
+
+type ActivitySelectorRequest struct {
+	SessionId string `json:"sessionId"`
+	Type      string `json:"type"`
+	Start     string `json:"start"`
+	End       string `json:"end"`
+	Page      uint   `json:"page"`
+}
+
+type ActivitySelectorResponse struct {
+	Title      string `json:"title"`
+	Start      uint   `json:"start"`
+	End        uint   `json:"end"`
+	JoinStatus bool   `json:"joinStatus"`
+}
+
+type CommentListRequest struct {
+	ActivityId string `json:"activityId"`
+	Page       uint   `json:"page"`
+}
+
+type CommentListResponse struct {
+	Name      string `json:"name"`
+	Content   string `json:"content"`
+	CreatedAt uint   `json:"createdAt"`
 }

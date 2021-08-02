@@ -6,6 +6,7 @@ import (
 	"example.com/greetings/codes"
 	"example.com/greetings/dir1"
 	"example.com/greetings/model"
+	"fmt"
 	"gopkg.in/yaml.v2"
 	"hash/crc32"
 	"io/ioutil"
@@ -49,12 +50,13 @@ func ResponseFun(code codes.Code, data interface{}) model.Response {
 }
 
 func GetConf(c *model.Config) {
-	yamlFile, err := ioutil.ReadFile("config/server.yaml")
+	yamlFile, err := ioutil.ReadFile("/Users/zhuoshan.luo/go/src/test/config/server.yml")
 	if err != nil {
 		log.Printf("yamlFile.Get err   #%v ", err)
 	}
 
 	err = yaml.Unmarshal(yamlFile, c)
+	fmt.Println(c.Driver, c.Passwd)
 	if err != nil {
 		log.Fatalf("Unmarshal: %v", err)
 	}
