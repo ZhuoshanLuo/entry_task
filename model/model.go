@@ -3,11 +3,13 @@ package model
 import "example.com/greetings/codes"
 
 type Config struct {
-	Driver   string `yaml:"driver"`
-	SqlUser  string `yaml:"sqlUser"`
-	Passwd   string `yaml:"passwd"`
-	Host     string `yaml:"host"`
-	Database string `yaml:"database"`
+	Db struct {
+		Driver   string `yaml:"driver"`
+		SqlUser  string `yaml:"sqlUser"`
+		Passwd   string `yaml:"passwd"`
+		Host     string `yaml:"host"`
+		Database string `yaml:"database"`
+	}
 }
 
 //结构体

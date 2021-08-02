@@ -15,8 +15,8 @@ func main() {
 
 	var conf model.Config
 	handler.GetConf(&conf)
-	sqlStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", conf.SqlUser, conf.Passwd, conf.Host, conf.Database)
-	globalVariable.DB, _ = sql.Open(conf.Driver, sqlStr)
+	sqlStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", conf.Db.SqlUser, conf.Db.Passwd, conf.Db.Host, conf.Db.Database)
+	globalVariable.DB, _ = sql.Open(conf.Db.Driver, sqlStr)
 	globalVariable.DB.SetConnMaxLifetime(200)
 	globalVariable.DB.SetMaxIdleConns(10)
 	defer globalVariable.DB.Close()

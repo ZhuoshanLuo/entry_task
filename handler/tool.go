@@ -56,7 +56,7 @@ func GetConf(c *model.Config) {
 	}
 
 	err = yaml.Unmarshal(yamlFile, c)
-	fmt.Println(c.Driver, c.Passwd)
+	fmt.Println(c.Db.Driver, c.Db.Passwd)
 	if err != nil {
 		log.Fatalf("Unmarshal: %v", err)
 	}
