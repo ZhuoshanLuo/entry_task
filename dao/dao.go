@@ -124,3 +124,42 @@ func QueryUserName(userId uint) (string, error) {
 	return userName, err
 }
 
+func AddForm(form model.Form) error {
+	str := fmt.Sprintf("insert into form_tab(activity_id, user_id, joined_at) values(%s, %d, %d)", form.ActId, form.UserId, form.JoinedAt)
+	_, err := globalVariable.DB.Exec(str)
+	return err
+}
+
+func DeleteForm(userId uint, actId string) error {
+	str := fmt.Sprintf("delete from form_tab where user_id=%d and activity_id=%s", userId, actId)
+	_, err := globalVariable.DB.Exec(str)
+	return err
+}
+
+func QueryActivityMsg(actId uint, obj *model.ShowJoinedActivitiesResponse) error {
+	str := fmt.Sprintf("select title, start_time, end_time from activities_tab where id=%d", actId)
+	return globalVariable.DB.QueryRow(str).Scan(&obj.Title, &obj.Start, &obj.End)
+}
+
+func GetAllJoinActivities(userId uint) (*sql.Rows, error) {
+	str := fmt.Sprintf("select activity_id from form_tab where user_id=%d", userId)
+	rows, err := globalVariable.DB.Query(str)
+	return rows, err
+}
+
+func QueryUsersMsg(userId uint, obj *model.ActivityUserListResponse) error {
+	str := fmt.Sprintf("select name, avatar from user_tab where id=%d", userId)
+	err := globalVariable.DB.QueryRow(str).Scan(&obj.Name, &obj.Avatar)
+	return err
+}
+
+func QueryAllUsersId(actId string) (*sql.Rows, error) {
+	str := fmt.Sprintf("select user_id from form_tab where activity_id=%s", actId)
+	return globalVariable.DB.Query(str)
+}
+
+func QueryActivityDetail(actId uint, obj *model.ActivityInfoResponse) error {
+	str := fmt.Sprintf("select title, content, location, start_time, end_time from activities_tab where id=%d", actId)
+	return globalVariable.DB.QueryRow(str).Scan(&obj.Title, &obj.Start, &obj.End, &obj.Location, &obj.Location, &obj.Content)
+}
+

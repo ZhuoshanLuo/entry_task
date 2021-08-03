@@ -5,75 +5,13 @@ import (
 	"example.com/greetings/codes"
 	"example.com/greetings/constant"
 	"example.com/greetings/dao"
-	main2 "example.com/greetings/dir1"
-	"example.com/greetings/globalVariable"
 	"example.com/greetings/model"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"net/http"
 	"regexp"
 	"strconv"
-	"time"
 )
 
-func Activity_info(c *gin.Context) {
-	json := make(map[string]interface{})
-	c.BindJSON(&json)
 
-	activity_id := json["id"].(string)
-	user_id := json["user_id"].(string)
-
-	//活动id不能为空
-	if activity_id == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 1,
-			"msg":  "activity id cannot be empty!",
-		})
-		return
-	}
-
-	//在activities表中查询activity id
-	var ad main2.Activity_detail
-	str := "select title, content, location, start_time, end_time from activities_tab where id='" + activity_id + "'"
-	globalVariable.DB.QueryRow(str).Scan(&ad.Title, &ad.Content, &ad.Location, &ad.Start_time, &ad.End_time)
-
-	//用户是否加入此活动
-	if user_id != "" {
-		str = "select * from form_tab where user_id='" + user_id + "' and id='" + activity_id + "'"
-		row, _ := globalVariable.DB.Query(str)
-		if row.Next() == false {
-			ad.Join_status = 0
-		} else {
-			ad.Join_status = 1
-		}
-	} else {
-		ad.Join_status = 0
-	}
-
-	//在form表中查询所有加入activity id的用户
-	str = "select user_id from form_tab where activity_id='" + activity_id + "'"
-	rows, _ := globalVariable.DB.Query(str)
-
-	for rows.Next() {
-		var user main2.UserMsg
-		var uid uint
-		rows.Scan(&uid)
-
-		//获取每个参加活动的用户的名称和头像，
-		str = "select name, image from user_tab where id='" + user_id + "'"
-		globalVariable.DB.QueryRow(str).Scan(user.Name, user.Image)
-
-		//将user_msg对象append进activity_detail的用户列表中
-		ad.Users = append(ad.Users, user)
-	}
-	c.JSON(http.StatusOK, ad)
-}
-
-func CheckErr(err error) {
-	if err != nil {
-		fmt.Printf("CheckErr:%v", err)
-	}
-}
 
 //用户注册接口
 func Register(c *gin.Context) {
@@ -87,7 +25,7 @@ func Register(c *gin.Context) {
 	isMatch2, _ := regexp.MatchString(constant.PasswdPattern, passwd)
 	if name == "" || passwd == "" || email == "" || !isMatch1 || !isMatch2 {
 		res := ResponseFun(codes.MissParameter, nil)
-		c.JSON(codes.HTTPStatusFromCode(codes.MissParameter,), res)
+		c.JSON(codes.HTTPStatusFromCode(codes.MissParameter), res)
 		return
 	}
 
@@ -117,7 +55,9 @@ func Register(c *gin.Context) {
 	//注册成功
 	res := ResponseFun(codes.OK, nil)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
+	return
 }
+
 
 //用户登陆接口
 func Login(c *gin.Context) {
@@ -160,9 +100,11 @@ func Login(c *gin.Context) {
 		return
 	}
 	//登陆成功，返回sessoin
-	res := ResponseFun(codes.OK, session.Id)
+	res := ResponseFun(codes.OK, session)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
+	return
 }
+
 
 //显示所有活动
 func ShowActivities(c *gin.Context) {
@@ -222,7 +164,9 @@ func ShowActivities(c *gin.Context) {
 	//处理完成，返回活动列表objects
 	res := ResponseFun(codes.OK, objects)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
+	return
 }
+
 
 //活动过滤器
 func ActivitiesSelector(c *gin.Context) {
@@ -274,7 +218,9 @@ func ActivitiesSelector(c *gin.Context) {
 	}
 	res := ResponseFun(codes.OK, objects)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
+	return
 }
+
 
 //发表评论
 func CreateComment(c *gin.Context) {
@@ -312,7 +258,9 @@ func CreateComment(c *gin.Context) {
 
 	res := ResponseFun(codes.OK, nil)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
+	return
 }
+
 
 //显示活动的所有评论
 func CommentsList(c *gin.Context) {
@@ -353,114 +301,222 @@ func CommentsList(c *gin.Context) {
 
 	res := ResponseFun(codes.OK, objects)
 	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
+	return
 }
 
-func Joined_activities_view(c *gin.Context) {
-	json := make(map[string]interface{})
-	c.BindJSON(&json)
-	session_id := json["session_id"].(string)
+//显示加入某个活动的所有用户
+func ActivityUserList(c *gin.Context) {
+	var req model.ActivityUserListRequest
+	c.BindJSON(&req)
+	actId := req.ActivityId
 
-	//用户需要在登陆状态，session_id不能为空
-	if session_id == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 1,
-			"msg":  "User not login!",
-		})
+	//不可缺少活动id
+	if actId == "" {
+		res := ResponseFun(codes.MissParameter, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MissParameter), res)
 		return
 	}
 
-	//在session_tab中获取用户user_id
-	var user_id uint
-	str := "select user_id from session_tab where session_id=" + session_id
-	err := globalVariable.DB.QueryRow(str).Scan(&user_id)
-	CheckErr(err)
-	if err == sql.ErrNoRows {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 1,
-			"msg":  "user not login",
-		})
+	//从form表中获取所有加入活动的用户id
+	rows, err := dao.QueryAllUsersId(actId)
+	if err != nil {
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
 		return
 	}
 
-	//在form_tab中获取用户加入的所有活动的id
-	str = "select id from form_tab where user_id=" + string(user_id)
-	rows, _ := globalVariable.DB.Query(str)
-
-	//在activities_tab中获取活动的信息，标题、开始时间、结束时间
-	var act_id uint
-	var objects []main2.Activities_joinin
+	//获取每个用户的信息
+	var userId uint
+	var objects []model.ActivityUserListResponse
 	for rows.Next() {
-		var obj main2.Activities_joinin
-		rows.Scan(&act_id)
+		var obj model.ActivityUserListResponse
+		err = rows.Scan(&userId)
+		if err != nil {
+			res := ResponseFun(codes.MysqlError, nil)
+			c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+			return
+		}
 
-		str = "select title, start_time, end_time from activities_tab where id=" + string(act_id)
-		globalVariable.DB.QueryRow(str).Scan(&obj.Title, &obj.Start_time, &obj.End_time)
+		err = dao.QueryUsersMsg(userId, &obj)
+		if err != nil {
+			res := ResponseFun(codes.MysqlError, nil)
+			c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+			return
+		}
 
 		objects = append(objects, obj)
 	}
 
-	c.JSON(http.StatusOK, objects)
+	res := ResponseFun(codes.OK, objects)
+	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
+	return
 }
 
-func Join_quit(c *gin.Context) {
-	json := make(map[string]interface{})
-	c.BindJSON(&json)
 
-	session_id := json["session_id"].(string)
-	activity_id := json["activity_id"].(string)
-	action := json["action"].(uint)
+//显示用户加入的所有活动
+func ShowJoinedActivities(c *gin.Context) {
+	var req model.ShowJoinedActivitiesRequest
+	c.BindJSON(&req)
+	sessionId := req.SessionId
+
+	//用户需要在登陆状态，session_id不能为空
+	if sessionId == "" {
+		res := ResponseFun(codes.MissParameter, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MissParameter), res)
+		return
+	}
+
+	//获取用户user_id
+	userId, err := dao.QueryUserId(sessionId)
+	if err == sql.ErrNoRows {
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+		return
+	}
+
+	//获取用户加入的所有活动的id
+	rows, err := dao.GetAllJoinActivities(userId)
+	if err != nil {
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+		return
+	}
+
+	//获取活动的信息，标题、开始时间、结束时间
+	var actId uint
+	var objects []model.ShowJoinedActivitiesResponse
+	for rows.Next() {
+		var obj model.ShowJoinedActivitiesResponse
+		rows.Scan(&actId)
+
+		err := dao.QueryActivityMsg(actId, &obj)
+		if err != nil {
+			res := ResponseFun(codes.MysqlError, nil)
+			c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+			return
+		}
+
+		objects = append(objects, obj)
+	}
+
+	res := ResponseFun(codes.OK, objects)
+	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
+	return
+}
+
+
+//用户加入或退出活动
+func JoinOrExit(c *gin.Context) {
+	var req model.JoinOrExitRequest
+	c.BindJSON(&req)
+	sessionId, actId, actionStr := req.SessionId, req.ActivityId, req.Action
+
+	//传入参数都不能为空或格式错误
+	action, err := strconv.Atoi(actionStr)
+	if sessionId == "" || actId == "" || actionStr == "" || err != nil{
+		res := ResponseFun(codes.MissParameter, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MissParameter), res)
+		return
+	}
 
 	//查看用户是否登陆
-	var user_id uint
-	err := globalVariable.DB.QueryRow("select user_id from session_tab where session_id='" + session_id + "'").Scan(&user_id)
+	userId, err := dao.QueryUserId(sessionId)
+	//用户未登陆
 	if err == sql.ErrNoRows {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 1,
-			"msg":  "user not login!",
-		})
+		res := ResponseFun(codes.NotLogin, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.NotLogin), res)
+		return
+	}
+	//数据库表操作失败
+	if err != nil {
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
 		return
 	}
 
 	//在form表中插入或删除表项
 	if action == 0 {
-		globalVariable.DB.Exec("delete from form_tab where user_id='" + string(user_id) + "' and activity_id='" + activity_id + "'")
+		err = dao.DeleteForm(userId, actId)
 	} else {
-		globalVariable.DB.Exec("insert into form_tab(id, activity_id, user_id, join_at) values(1, '" + activity_id + "', '" + string(user_id) + "', '" + string(time.Now().Unix()) + "'")
+		var form model.Form
+		form.ActId, form.UserId = actId, userId
+		form.JoinedAt = GetTime()
+		err = dao.AddForm(form)
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"msg":  "success",
-	})
+	//操作数据库时出错
+	if err != nil{
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+		return
+	}
+
+	res := ResponseFun(codes.OK, nil)
+	c.JSON(codes.HTTPStatusFromCode(codes.OK), res)
+	return
 }
 
-func Manage_login(c *gin.Context) {
+/*
+func ActivityInfo(c *gin.Context) {
+	var req model.ActivityInfoRequest
+	c.BindJSON(&req)
+	sessionId, actId := req.SessionId, req.ActivityId
 
+	//活动id是必要的参数
+	if actId == 0 {
+		res := ResponseFun(codes.MissParameter, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MissParameter), res)
+		return
+	}
+
+	//如果用户是登陆状态，获取用户的userid
+	var userId uint
+	var err error
+	if sessionId != 0 {
+		userId, err = dao.QueryUserId(string(sessionId))
+		if err != nil {
+			res := ResponseFun(codes.MysqlError, nil)
+			c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+			return
+		}
+	}
+
+	//在activities表中查询活动信息
+	var obj model.ActivityInfoResponse
+	err = dao.QueryActivityDetail(actId, &obj)
+	if err != nil {
+		res := ResponseFun(codes.MysqlError, nil)
+		c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+		return
+	}
+
+	//用户是否加入此活动
+	if sessionId != 0 {
+		obj.JoinStatus, err = dao.IsJoinin(userId, actId)
+		if err != nil {
+			res := ResponseFun(codes.MysqlError, nil)
+			c.JSON(codes.HTTPStatusFromCode(codes.MysqlError), res)
+			return
+		}
+	} else {
+		obj.JoinStatus = false
+	}
+
+	//在form表中查询所有加入activity id的用户
+	str = "select userId from form_tab where actId='" + actId + "'"
+	rows, _ := globalVariable.DB.Query(str)
+
+	for rows.Next() {
+		var user main2.UserMsg
+		var uid uint
+		rows.Scan(&uid)
+
+		//获取每个参加活动的用户的名称和头像，
+		str = "select name, image from user_tab where id='" + userId + "'"
+		globalVariable.DB.QueryRow(str).Scan(user.Name, user.Image)
+
+		//将user_msg对象append进activity_detail的用户列表中
+		ad.Users = append(ad.Users, user)
+	}
+	c.JSON(http.StatusOK, ad)
 }
-
-func Manage_add_activity(c *gin.Context) {
-
-}
-
-func Manage_del_activity(c *gin.Context) {
-
-}
-
-func Manage_add_activity_type(c *gin.Context) {
-
-}
-
-func Manage_edit_activity(c *gin.Context) {
-
-}
-
-func Manage_show_users(c *gin.Context) {
-
-}
-
-func Manage_edit_activity_type(c *gin.Context) {
-
-}
-
-func Manage_del_activity_type(c *gin.Context) {
-
-}
+*/

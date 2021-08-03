@@ -30,18 +30,6 @@ type Activity struct {
 	End   uint   `json:"end"`
 }
 
-type ActivityDetail struct {
-	Content  string   `json:"content"`
-	Location string   `json:"location"`
-	Act      Activity `json:"activity"`
-}
-
-type UserMsg struct {
-	Name   string `json:"name"`
-	Avatar string `json:"image"`
-	Email  string `json:"email"`
-}
-
 type User struct {
 	Name      string `json:"name"`
 	Passwd    string `json:"Passwd"`
@@ -70,17 +58,6 @@ type ShowActivitiesRes struct {
 	Start      uint   `json:"start"`
 	End        uint   `json:"end"`
 	JoinStatus bool   `json:"status"`
-}
-
-//活动选择器函数的返回值
-type SelectorStruct struct {
-	Activity
-	Response
-	JoinStatus uint `json:"status"'`
-}
-
-//活动详情的返回值
-type ADetailStruct struct {
 }
 
 type RegisterRequest struct {
@@ -130,4 +107,55 @@ type CommentListResponse struct {
 	Name      string `json:"name"`
 	Content   string `json:"content"`
 	CreatedAt uint   `json:"createdAt"`
+}
+
+type JoinOrExitRequest struct {
+	SessionId  string `json:"sessionId"`
+	ActivityId string `json:"activityId"`
+	Action     string `json:"action"`
+}
+
+type Form struct {
+	ActId    string `json:"activityId"`
+	UserId   uint   `json:"userId"`
+	JoinedAt uint   `json:"joinedAt"`
+}
+
+type ShowJoinedActivitiesRequest struct {
+	SessionId string `json:"sessionId"`
+}
+
+type ShowJoinedActivitiesResponse struct {
+	Title string `json:"title"`
+	Start uint   `json:"start"`
+	End   uint   `json:"end"`
+}
+
+type ActivityUserListRequest struct {
+	ActivityId string `json:"activityId"`
+}
+
+type ActivityUserListResponse struct {
+	Name   string `json:"name"`
+	Avatar string `json:"avatar"`
+}
+
+type ActivityInfoRequest struct {
+	SessionId uint `json:"sessionId"`
+	ActivityId uint `json:"sessionId"`
+}
+
+type ActivityDetail struct{
+	Title string `json:"title"`
+	Start uint `json:"start"`
+	End uint `json:"end"`
+	Location string `json:"location"`
+	Content string `json:"content"`
+}
+
+type ActivityInfoResponse struct {
+	*ActivityDetail
+	JoinStatus bool `json:"joinStatus"`
+	UserList []ActivityUserListResponse
+	CommentList []CommentListResponse
 }

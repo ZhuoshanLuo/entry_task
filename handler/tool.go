@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"example.com/greetings/codes"
-	"example.com/greetings/dir1"
 	"example.com/greetings/model"
 	"fmt"
 	"gopkg.in/yaml.v2"
@@ -15,7 +14,7 @@ import (
 )
 
 func AddSalt(passwd string) string {
-	passwd = passwd + dir1.Salt
+	passwd = AddSalt(passwd)
 	md5Ctx := md5.New()
 	md5Ctx.Write([]byte(passwd))
 	passwd = hex.EncodeToString(md5Ctx.Sum(nil))
