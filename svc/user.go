@@ -1,4 +1,4 @@
-package handler
+package svc
 
 import (
 	"database/sql"
@@ -37,7 +37,10 @@ func NewHandlerFunc(f Handler) gin.HandlerFunc{
 func doRegister(c *gin.Context) (codes.Code, interface{}){
 	//提取请求参数
 	var req model.RegisterRequest
-	c.BindJSON(&req)
+	err := c.BindJSON(&req)
+	if err != nil {
+		return codes.BindJsonError, nil
+	}
 	name, passwd, email, avatar := req.Name, req.Passwd, req.Email, req.Avatar
 
 	//传入的用户名、密码和邮箱不能为空或不符合pattern（头像可为空）
@@ -59,7 +62,7 @@ func doRegister(c *gin.Context) (codes.Code, interface{}){
 	user.Passwd = AddSalt(passwd)
 	user.IsAdmin = false
 	user.CreatedAt = GetTime()
-	err := dao.InsertUser(user)
+	err = dao.InsertUser(user)
 
 	//插入数据库时发生错误
 	if err != nil {
@@ -75,7 +78,10 @@ func doRegister(c *gin.Context) (codes.Code, interface{}){
 func doLogin(c *gin.Context) (codes.Code, interface{}){
 	//提取请求参数
 	var req model.LoginRequest
-	c.BindJSON(&req)
+	err := c.BindJSON(&req)
+	if err != nil {
+		return codes.BindJsonError, nil
+	}
 	name, reqPasswd := req.Name, req.Passwd
 
 	//传入的用户名和密码不能为空
@@ -111,12 +117,14 @@ func doLogin(c *gin.Context) (codes.Code, interface{}){
 //显示所有活动
 func doShowActivities(c *gin.Context) (codes.Code, interface{}){
 	var req model.ShowActivityRequest
-	c.BindJSON(&req)
+	err := c.BindJSON(&req)
+	if err != nil {
+		return codes.BindJsonError, nil
+	}
 	sessionId, page := req.SessionId, req.Page
 
 	//如果用户是登陆状态，传入sessionId不为空
 	var userId uint
-	var err error
 	if sessionId != 0{
 		userId, err = dao.QueryUserId(sessionId)
 		//数据库执行时错误
@@ -163,12 +171,14 @@ func doShowActivities(c *gin.Context) (codes.Code, interface{}){
 //活动过滤器
 func doActivitiesSelector(c *gin.Context) (codes.Code, interface{}){
 	var req model.ActivitySelectorRequest
-	c.BindJSON(&req)
+	err := c.BindJSON(&req)
+	if err != nil {
+		return codes.BindJsonError, nil
+	}
 	sessionId, actType, start, end, page := req.SessionId, req.Type, req.Start, req.End, req.Page
 
 	//如果用户是登陆状态，获取user_id
 	var userId uint
-	var err error
 	if sessionId != 0{
 		userId, err = dao.QueryUserId(sessionId)
 		if err != nil {
@@ -208,7 +218,10 @@ func doActivitiesSelector(c *gin.Context) (codes.Code, interface{}){
 //发表评论
 func doCreateComment(c *gin.Context) (codes.Code, interface{}){
 	var req model.CreateCommentRequest
-	c.BindJSON(&req)
+	err := c.BindJSON(&req)
+	if err != nil {
+		return codes.BindJsonError, nil
+	}
 	sessionId, activityId, content := req.SessionId, req.ActivityId, req.Content
 
 	//传入内容不能为空
@@ -240,7 +253,10 @@ func doCreateComment(c *gin.Context) (codes.Code, interface{}){
 //显示用户加入的所有活动
 func doShowJoinedActivities(c *gin.Context) (codes.Code, interface{}){
 	var req model.ShowJoinedActivitiesRequest
-	c.BindJSON(&req)
+	err := c.BindJSON(&req)
+	if err != nil {
+		return codes.BindJsonError, nil
+	}
 	sessionId := req.SessionId
 
 	//用户需要在登陆状态，session_id不能为空
@@ -282,7 +298,10 @@ func doShowJoinedActivities(c *gin.Context) (codes.Code, interface{}){
 //用户加入或退出活动
 func doJoinOrExit(c *gin.Context) (codes.Code, interface{}){
 	var req model.JoinOrExitRequest
-	c.BindJSON(&req)
+	err := c.BindJSON(&req)
+	if err != nil {
+		return codes.BindJsonError, nil
+	}
 	sessionId, actId, action := req.SessionId, req.ActivityId, req.Action
 
 	//传入参数都不能为空或格式错误
@@ -383,7 +402,10 @@ func CommentsList(actId uint, page uint) (codes.Code, []model.CommentListRespons
 
 func doActivityInfo(c *gin.Context) (codes.Code, interface{}){
 	var req model.ActivityInfoRequest
-	c.BindJSON(&req)
+	err := c.BindJSON(&req)
+	if err != nil {
+		return codes.BindJsonError, nil
+	}
 	sessionId, actId, page := req.SessionId, req.ActivityId, req.CommentPage
 
 	//活动id是必要的参数
@@ -393,7 +415,6 @@ func doActivityInfo(c *gin.Context) (codes.Code, interface{}){
 
 	//如果用户是登陆状态，获取用户的userid
 	var userId uint
-	var err error
 	if sessionId != 0 {
 		userId, err = dao.QueryUserId(sessionId)
 		if err != nil {

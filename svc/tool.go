@@ -1,10 +1,11 @@
-package handler
+package svc
 
 import (
 	"crypto/md5"
 	"encoding/hex"
 	"example.com/greetings/codes"
 	"example.com/greetings/constant"
+	"example.com/greetings/dao"
 	"example.com/greetings/model"
 	"fmt"
 	"gopkg.in/yaml.v2"
@@ -51,7 +52,7 @@ func ResponseFun(code codes.Code, data interface{}) model.Response {
 }
 
 func GetConf(c *model.Config) {
-	yamlFile, err := ioutil.ReadFile("/Users/zhuoshan.luo/go/src/test/config/server.yml")
+	yamlFile, err := ioutil.ReadFile("./config/server.yml")
 	if err != nil {
 		log.Printf("yamlFile.Get err   #%v ", err)
 	}
@@ -63,3 +64,11 @@ func GetConf(c *model.Config) {
 	}
 }
 
+func CheckIdentity(sessionId uint) (bool, error) {
+	userId, err := dao.QueryUserId(sessionId)
+	if err != nil {
+		return false, err
+	}
+	//在user表中查找权限
+	return dao.QueryUserAdmin(userId)
+}

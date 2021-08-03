@@ -13,6 +13,8 @@ const (
 	UserNotExist  Code = 5
 	PassWordError Code = 6
 	NotLogin      Code = 7
+	BindJsonError Code = 8
+	Forbidden     Code = 9
 )
 
 func HTTPStatusFromCode(code Code) int {
@@ -25,6 +27,8 @@ func HTTPStatusFromCode(code Code) int {
 		UserNotExist:  http.StatusBadRequest,
 		PassWordError: http.StatusBadRequest,
 		NotLogin:      http.StatusBadRequest,
+		BindJsonError: http.StatusBadRequest,
+		Forbidden:     http.StatusForbidden,
 	}
 	return codes[code]
 }
@@ -48,6 +52,10 @@ func Errorf(code Code) string {
 		codeMsg = "Password error!"
 	case NotLogin:
 		codeMsg = "User not login!"
+	case BindJsonError:
+		codeMsg = "Bind json error!"
+	case Forbidden:
+		codeMsg = "You have no authority！"
 	}
 	return codeMsg
 }
