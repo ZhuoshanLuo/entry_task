@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"example.com/greetings/codes"
+	"example.com/greetings/constant"
 	"example.com/greetings/model"
 	"fmt"
 	"gopkg.in/yaml.v2"
@@ -14,16 +15,17 @@ import (
 )
 
 func AddSalt(passwd string) string {
-	passwd = AddSalt(passwd)
+	passwd += constant.Salt
 	md5Ctx := md5.New()
 	md5Ctx.Write([]byte(passwd))
 	passwd = hex.EncodeToString(md5Ctx.Sum(nil))
 	return passwd
 }
 
-//生成各种表的id字段
-func CreateSessionId(s string) uint {
-	hash_code := uint(crc32.ChecksumIEEE([]byte(s)))
+//生成session表的id字段
+func CreateSessionId(s uint) uint {
+	id := string(s)
+	hash_code := uint(crc32.ChecksumIEEE([]byte(id)))
 	if hash_code >= 0 {
 		return hash_code
 	}

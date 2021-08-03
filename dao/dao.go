@@ -69,14 +69,14 @@ func InsertComment(obj model.Comment) error {
 	return nil
 }
 
-func QueryUserId(sessionId string) (uint, error){
+func QueryUserId(sessionId uint) (uint, error){
 	var userId uint
-	str := fmt.Sprintf("select user_id from session_tab where id=%s", sessionId)
+	str := fmt.Sprintf("select user_id from session_tab where id=%d", sessionId)
 	err := globalVariable.DB.QueryRow(str).Scan(&userId)
 	return userId, err
 }
 
-func SqlActivitiesSelector(actType, start, end string, page uint) (*sql.Rows, error) {
+func SqlActivitiesSelector(actType string, start, end, page uint) (*sql.Rows, error) {
 	var flag = 0
 	offset := page * 10
 	str := "select a.id, a.title, a.start_time, a.end_time from activities_tab a left join activities_type_tab b on a.type_id=b.id "
@@ -88,20 +88,20 @@ func SqlActivitiesSelector(actType, start, end string, page uint) (*sql.Rows, er
 			str += "and b.name='" + actType + "' "
 		}
 	}
-	if start != "" {
+	if start != 0 {
 		if flag == 0 {
 			flag = 1
-			str += "where a.start_time>=" + start + " "
+			str += "where a.start_time>=" + string(start) + " "
 		} else {
-			str += "and a.start_time>=" + start + " "
+			str += "and a.start_time>=" + string(start) + " "
 		}
 	}
-	if end != "" {
+	if end != 0 {
 		if flag == 0 {
 			flag = 1
-			str += "where a.end_time<=" + end + " "
+			str += "where a.end_time<=" + string(end) + " "
 		} else {
-			str += "and a.end_time<=" + end + " "
+			str += "and a.end_time<=" + string(end) + " "
 		}
 	}
 	s := fmt.Sprintf("limit 10 offset %d", offset)
@@ -125,20 +125,23 @@ func QueryUserName(userId uint) (string, error) {
 }
 
 func AddForm(form model.Form) error {
-	str := fmt.Sprintf("insert into form_tab(activity_id, user_id, joined_at) values(%s, %d, %d)", form.ActId, form.UserId, form.JoinedAt)
+	str := fmt.Sprintf("insert into form_tab(activity_id, user_id, joined_at) values(%d, %d, %d)", form.ActId, form.UserId, form.JoinedAt)
 	_, err := globalVariable.DB.Exec(str)
 	return err
 }
 
-func DeleteForm(userId uint, actId string) error {
-	str := fmt.Sprintf("delete from form_tab where user_id=%d and activity_id=%s", userId, actId)
+func DeleteForm(userId uint, actId uint) error {
+	str := fmt.Sprintf("delete from form_tab where user_id=%d and activity_id=%d", userId, actId)
 	_, err := globalVariable.DB.Exec(str)
 	return err
 }
 
-func QueryActivityMsg(actId uint, obj *model.ShowJoinedActivitiesResponse) error {
+func QueryActivityMsg(actId uint) (string, uint, uint, error) {
+	var title string
+	var start, end uint
 	str := fmt.Sprintf("select title, start_time, end_time from activities_tab where id=%d", actId)
-	return globalVariable.DB.QueryRow(str).Scan(&obj.Title, &obj.Start, &obj.End)
+	err := globalVariable.DB.QueryRow(str).Scan(&title, &start, &end)
+	return title, start, end, err
 }
 
 func GetAllJoinActivities(userId uint) (*sql.Rows, error) {
@@ -158,8 +161,10 @@ func QueryAllUsersId(actId string) (*sql.Rows, error) {
 	return globalVariable.DB.Query(str)
 }
 
-func QueryActivityDetail(actId uint, obj *model.ActivityInfoResponse) error {
+func QueryActivityDetail(actId uint) (*model.ActivityDetail, error) {
+	var data model.ActivityDetail
 	str := fmt.Sprintf("select title, content, location, start_time, end_time from activities_tab where id=%d", actId)
-	return globalVariable.DB.QueryRow(str).Scan(&obj.Title, &obj.Start, &obj.End, &obj.Location, &obj.Location, &obj.Content)
+	err := globalVariable.DB.QueryRow(str).Scan(&data.Title, &data.Start, &data.End, &data.Location, &data.Location, &data.Content)
+	return &data, err
 }
 
