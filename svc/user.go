@@ -39,6 +39,7 @@ func doRegister(c *gin.Context) (codes.Code, interface{}){
 	var req model.RegisterRequest
 	err := c.BindJSON(&req)
 	if err != nil {
+		DebugLogger.Println("bind json error!")
 		return codes.BindJsonError, nil
 	}
 	name, passwd, email, avatar := req.Name, req.Passwd, req.Email, req.Avatar
@@ -53,9 +54,11 @@ func doRegister(c *gin.Context) (codes.Code, interface{}){
 	//用户已经存在
 	isRegister, err := dao.QueryUserIsRegister(name, email)
 	if err != nil {
+		DebugLogger.Println("mysql error when query user is register")
 		return codes.MysqlError, nil
 	}
 	if isRegister {
+		InfoLogger.Println("user request register a exist account")
 		return codes.UserExist, nil
 	}
 
@@ -69,6 +72,7 @@ func doRegister(c *gin.Context) (codes.Code, interface{}){
 
 	//插入数据库时发生错误
 	if err != nil {
+		DebugLogger.Println("mysql error when insert into user")
 		return codes.MysqlError, nil
 	}
 

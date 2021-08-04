@@ -13,13 +13,17 @@ import (
 func main() {
 	r := gin.Default()
 
+	//读取配置参数
 	var conf model.Config
 	svc.GetConf(&conf)
+	//连接数据库
 	sqlStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", conf.Db.SqlUser, conf.Db.Passwd, conf.Db.Host, conf.Db.Database)
 	globalVariable.DB, _ = sqlx.Open(conf.Db.Driver, sqlStr)
 	globalVariable.DB.SetMaxOpenConns(200)
 	globalVariable.DB.SetMaxIdleConns(10)
 	defer globalVariable.DB.Close()
+	//打开日志
+	svc.LoggerInit()
 
 	r.POST("/api/login", svc.Login)
 	r.POST("/api/register", svc.Register)
