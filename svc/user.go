@@ -51,7 +51,10 @@ func doRegister(c *gin.Context) (codes.Code, interface{}){
 	}
 
 	//用户已经存在
-	isRegister := dao.QueryUserIsRegister(name, email)
+	isRegister, err := dao.QueryUserIsRegister(name, email)
+	if err != nil {
+		return codes.MysqlError, nil
+	}
 	if isRegister {
 		return codes.UserExist, nil
 	}
@@ -179,7 +182,7 @@ func doActivitiesSelector(c *gin.Context) (codes.Code, interface{}){
 
 	//如果用户是登陆状态，获取user_id
 	var userId uint
-	if sessionId != 0{
+	if sessionId != 0 {
 		userId, err = dao.QueryUserId(sessionId)
 		if err != nil {
 			return codes.MysqlError, nil
@@ -201,7 +204,7 @@ func doActivitiesSelector(c *gin.Context) (codes.Code, interface{}){
 
 		//是否参加活动
 		if sessionId != 0 {
-			act.JoinStatus, err = dao.IsJoinin(userId, sessionId)
+			act.JoinStatus, err = dao.IsJoinin(userId, actId)
 			if err != nil {
 				return codes.MysqlError, nil
 			}
@@ -344,7 +347,7 @@ func ActivityUserList(actId uint) (codes.Code, []model.ActivityUserListResponse)
 	}
 
 	//从form表中获取所有加入活动的用户id
-	rows, err := dao.QueryAllUsersId(string(actId))
+	rows, err := dao.QueryAllUsersId(actId)
 	if err != nil {
 		return codes.MysqlError, nil
 	}
@@ -359,7 +362,8 @@ func ActivityUserList(actId uint) (codes.Code, []model.ActivityUserListResponse)
 			return codes.MysqlError, nil
 		}
 
-		err = dao.QueryUsersMsg(userId, &obj)
+		row := dao.QueryUsersMsg(userId)
+		err := row.StructScan(&obj)
 		if err != nil {
 			return codes.MysqlError, nil
 		}
@@ -378,7 +382,7 @@ func CommentsList(actId uint, page uint) (codes.Code, []model.CommentListRespons
 	}
 
 	//在comment_tab表中获取user_id、content、created_time
-	rows, err := dao.QueryCommentMsg(string(actId), page)
+	rows, err := dao.QueryCommentMsg(actId, page)
 	if err != nil {
 		return codes.MysqlError, nil
 	}
@@ -424,10 +428,13 @@ func doActivityInfo(c *gin.Context) (codes.Code, interface{}){
 
 	//在activities表中查询活动信息
 	var obj model.ActivityInfoResponse
-	obj.ActivityDetail, err = dao.QueryActivityDetail(actId)
+	var actDetail model.ActivityDetail
+	row := dao.QueryActivityDetail(actId)
+	err = row.StructScan(&actDetail)
 	if err != nil {
 		return codes.MysqlError, nil
 	}
+	obj.ActivityDetail = &actDetail
 
 	//用户是否加入此活动
 	if sessionId != 0 {

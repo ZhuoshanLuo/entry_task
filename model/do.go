@@ -2,41 +2,41 @@ package model
 
 //表数据结构
 type User struct {
-	Name      string `json:"name"`
-	Passwd    string `json:"Passwd"`
-	Email     string `json:"email"`
-	Avatar    string `json:"image"`
-	IsAdmin   bool   `json:"IsAdmin"`
-	CreatedAt uint   `json:"createdAt"`
+	Name      string `db:"name"`
+	Passwd    string `db:"passwd"`
+	Email     string `db:"email"`
+	Avatar    string `db:"avatar"`
+	IsAdmin   bool   `db:"is_admin"`
+	CreatedAt uint   `db:"created_at"`
 }
 
 type Comment struct {
-	UserId     uint   `json:"userId"`
-	ActivityId uint   `json:"activityId"`
-	Content    string `json:"content"`
-	CreatedAt  uint   `json:"CreatedAt"`
+	UserId     uint   `db:"user_id"`
+	ActivityId uint   `db:"activity_id"`
+	Content    string `db:"content"`
+	CreatedAt  uint   `db:"created_at"`
 }
 
 type Form struct {
-	ActId    uint `json:"activityId"`
-	UserId   uint `json:"userId"`
-	JoinedAt uint `json:"joinedAt"`
+	ActId    uint `db:"activity_id"`
+	UserId   uint `db:"user_id"`
+	JoinedAt uint `db:"joined_at"`
 }
 
 type Session struct {
-	Id     uint `json:"id"`
-	UserId uint `json:"userId"`
+	Id     uint `db:"id"`
+	UserId uint `db:"user_id"`
 }
 
 type Activity struct {
-	TypeId   uint   `json:"typeId"`
-	Title    string `json:"title"`
-	Content  string `json:"content"`
-	Location string `json:"location"`
-	Start    uint   `json:"start"`
-	End      uint   `json:"end"`
+	TypeId   uint   `db:"typeId"`
+	Title    string `db:"title"`
+	Content  string `db:"content"`
+	Location string `db:"location"`
+	Start    uint   `db:"start"`
+	End      uint   `db:"end"`
 }
 
 type ActivityType struct {
-	Name string `json:"name"`
+	Name string `db:"name"`
 }

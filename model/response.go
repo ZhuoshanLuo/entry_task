@@ -36,8 +36,8 @@ type CommentListResponse struct {
 }
 
 type ActivityUserListResponse struct {
-	Name   string `json:"name"`
-	Avatar string `json:"avatar"`
+	Name   string `db:"name"`
+	Avatar string `db:"avatar"`
 }
 
 //结构体
@@ -48,11 +48,11 @@ type Response struct {
 }
 
 type ActivityDetail struct {
-	Title    string `json:"title"`
-	Start    uint   `json:"start"`
-	End      uint   `json:"end"`
-	Location string `json:"location"`
-	Content  string `json:"content"`
+	Title    string `db:"title"`
+	Start    uint   `db:"start_time"`
+	End      uint   `db:"end_time"`
+	Location string `db:"location"`
+	Content  string `db:"content"`
 }
 
 type ShowActivityTypeResponse struct {

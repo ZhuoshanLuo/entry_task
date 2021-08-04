@@ -3,12 +3,15 @@ package svc
 import (
 	"database/sql"
 	"example.com/greetings/codes"
+	"example.com/greetings/constant"
 	"example.com/greetings/dao"
 	"example.com/greetings/model"
 	"github.com/gin-gonic/gin"
+	"regexp"
 )
 
 var (
+	ManageRegister   = NewHandlerFunc(doManageRegister)
 	ManageLogin      = NewHandlerFunc(doManageLogin)
 	AddActivity      = NewHandlerFunc(doAddActivity)
 	DelActivity      = NewHandlerFunc(doDelActivity)
@@ -19,6 +22,49 @@ var (
 	DelActivityType  = NewHandlerFunc(doDelActivityType)
 	ShowActivityType = NewHandlerFunc(doShowActivityType)
 )
+
+//运营人员注册接口
+func doManageRegister(c *gin.Context) (codes.Code, interface{}) {
+	//提取请求参数
+	var req model.RegisterRequest
+	err := c.BindJSON(&req)
+	if err != nil {
+		return codes.BindJsonError, nil
+	}
+	name, passwd, email, avatar := req.Name, req.Passwd, req.Email, req.Avatar
+
+	//传入的用户名、密码和邮箱不能为空或不符合pattern（头像可为空）
+	isMatch1, _ := regexp.MatchString(constant.NamePattern, name)
+	isMatch2, _ := regexp.MatchString(constant.PasswdPattern, passwd)
+	if name == "" || passwd == "" || email == "" || !isMatch1 || !isMatch2 {
+		return codes.MissParameter, nil
+	}
+
+	//用户已经存在
+	isRegister, err := dao.QueryUserIsRegister(name, email)
+	if err != nil {
+		return codes.MysqlError, nil
+	}
+	if isRegister {
+		return codes.UserExist, nil
+	}
+
+	//插入数据到user表中
+	var user model.User
+	user.Name, user.Avatar, user.Email = name, avatar, email
+	user.Passwd = AddSalt(passwd)
+	user.IsAdmin = true
+	user.CreatedAt = GetTime()
+	err = dao.InsertUser(user)
+
+	//插入数据库时发生错误
+	if err != nil {
+		return codes.MysqlError, nil
+	}
+
+	//注册成功
+	return codes.OK, nil
+}
 
 //运营人员登陆接口
 func doManageLogin(c *gin.Context) (codes.Code, interface{}) {
@@ -211,7 +257,7 @@ func doShowActivityType(c *gin.Context) (codes.Code, interface{}) {
 	var objects []model.ShowActivityTypeResponse
 	for rows.Next() {
 		var obj model.ShowActivityTypeResponse
-		err := rows.Scan(obj.TypeName)
+		err := rows.Scan(&obj.TypeName)
 		if err != nil {
 			return codes.MysqlError, nil
 		}
@@ -227,7 +273,7 @@ func doEditActivityType(c *gin.Context) (codes.Code, interface{}) {
 		return codes.BindJsonError, nil
 	}
 	sessionId, typeId, name := req.SessionId, req.Id, req.Name
-	if sessionId == 0 || typeId == 0 {
+	if sessionId == 0 || typeId == 0 || name == ""{
 		return codes.MissParameter, nil
 	}
 
@@ -258,6 +304,9 @@ func doDelActivityType(c *gin.Context) (codes.Code, interface{}) {
 
 	//首先先验证身份，是否已登陆，是否是运营人员
 	isAdmin, err := CheckIdentity(sessionId)
+	if err == sql.ErrNoRows {
+		return codes.Forbidden, nil
+	}
 	if err != nil {
 		return codes.MysqlError, nil
 	}

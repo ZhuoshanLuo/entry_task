@@ -2,51 +2,53 @@ package dao
 
 import (
 	"database/sql"
-	"example.com/greetings/constant"
 	"example.com/greetings/globalVariable"
 	"example.com/greetings/model"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 )
 
-func QueryUserIsRegister(name string, email string) bool {
-	str := fmt.Sprintf("select * from user_tab where name='%s' or email='%s'", name, email)
-	row, _ := globalVariable.DB.Query(str)
-	if row.Next() {
-		return true
+func QueryUserIsRegister(name string, email string) (bool, error) {
+	sql := "select * from user_tab where name=? or email=?"
+	row, err := globalVariable.DB.Queryx(sql, name, email)
+	//数据库发生错误
+	if err != nil || !row.Next() {
+		return false, err
 	}
-	return false
+	return true, err
 }
 
 func InsertUser(user model.User) error {
-	str := fmt.Sprintf("insert into user_tab(name, passwd, email, avatar, is_admin, created_at) values ('%s', '%s', '%s', '%s', %t, %d)", user.Name, user.Passwd, user.Email, user.Avatar, user.IsAdmin, user.CreatedAt)
-	_, err := globalVariable.DB.Exec(str)
+	sql := "insert into user_tab(name, passwd, email, avatar, is_admin, created_at) values(:name, :passwd, :email, :avatar, :is_admin, :created_at)"
+	_, err := globalVariable.DB.NamedExec(sql, &user)
 	return err
 }
 
 func QueryUserIsExist(name string) (uint, string, error) {
 	var userId uint
 	var passwd string
-	str := fmt.Sprintf("select id, passwd from user_tab where name='%s'", name)
-	err := globalVariable.DB.QueryRow(str).Scan(&userId, &passwd)
+	sql := "select id, passwd from user_tab where name=?"
+	row := globalVariable.DB.QueryRowx(sql, name)
+	err := row.Scan(&userId, &passwd)
 	return userId, passwd, err
 }
 
 func InsertSession(session model.Session) error {
-	str := fmt.Sprintf("insert into session_tab(id, user_id) values(%d, %d)", session.Id, session.UserId)
-	_, err := globalVariable.DB.Exec(str)
+	sql := "insert into session_tab(id, user_id) values(:id, :user_id)"
+	_, err := globalVariable.DB.NamedExec(sql, &session)
 	return err
 }
 
-func GetALLActivityRows(page uint) (*sql.Rows, error) {
+func GetALLActivityRows(page uint) (*sqlx.Rows, error) {
 	offset := page * 10
-	str := fmt.Sprintf("select id, title, start_time, end_time from activities_tab limit %d offset %d", constant.Limit, offset)
-	rows, err := globalVariable.DB.Query(str)
+	sql := "select id, title, start_time, end_time from activities_tab limit ? offset ?"
+	rows, err := globalVariable.DB.Queryx(sql, 10, offset)
 	return rows, err
 }
 
 func IsJoinin(userId uint, actId uint) (bool, error) {
-	str := fmt.Sprintf("select * from form_tab where activity_id=%d and user_id=%d", actId, userId)
-	row, err := globalVariable.DB.Query(str)
+	sql := "select * from form_tab where activity_id=? and user_id=?"
+	row, err := globalVariable.DB.Queryx(sql, actId, userId)
 	if row.Next() {
 		return true, err
 	}
@@ -54,8 +56,8 @@ func IsJoinin(userId uint, actId uint) (bool, error) {
 }
 
 func InsertComment(obj model.Comment) error {
-	str := fmt.Sprintf("insert into comments_tab(user_id, activity_id, content, created_at) values(%d, %d, '%s', %d)", obj.UserId, obj.ActivityId, obj.Content, obj.CreatedAt)
-	_, err := globalVariable.DB.Exec(str)
+	sql := "insert into comments_tab(user_id, activity_id, content, created_at) values(:user_id, :activity_id, :content, :created_at)"
+	_, err := globalVariable.DB.NamedExec(sql, &obj)
 	if err != nil {
 		return err
 	}
@@ -64,105 +66,104 @@ func InsertComment(obj model.Comment) error {
 
 func QueryUserId(sessionId uint) (uint, error) {
 	var userId uint
-	str := fmt.Sprintf("select user_id from session_tab where id=%d", sessionId)
-	err := globalVariable.DB.QueryRow(str).Scan(&userId)
+	sql := "select user_id from session_tab where id=?"
+	err := globalVariable.DB.Get(&userId, sql, sessionId)
 	return userId, err
 }
 
-func SqlActivitiesSelector(actType string, start, end, page uint) (*sql.Rows, error) {
+func SqlActivitiesSelector(actType string, start, end, page uint) (*sqlx.Rows, error) {
 	var flag = 0
 	offset := page * 10
-	str := "select a.id, a.title, a.start_time, a.end_time from activities_tab a left join activities_type_tab b on a.type_id=b.id "
+	sql := "select a.id, a.title, a.start_time, a.end_time from activities_tab a left join activities_type_tab b on a.type_id=b.id "
 	if actType != "" {
 		if flag == 0 {
 			flag = 1
-			str += "where b.name='" + actType + "' "
+			sql += "where b.name='" + actType + "' "
 		} else {
-			str += "and b.name='" + actType + "' "
+			sql += "and b.name='" + actType + "' "
 		}
 	}
 	if start != 0 {
 		if flag == 0 {
 			flag = 1
-			str += "where a.start_time>=" + string(start) + " "
+			sql += "where a.start_time>=" + string(start) + " "
 		} else {
-			str += "and a.start_time>=" + string(start) + " "
+			sql += "and a.start_time>=" + string(start) + " "
 		}
 	}
 	if end != 0 {
 		if flag == 0 {
 			flag = 1
-			str += "where a.end_time<=" + string(end) + " "
+			sql += "where a.end_time<=" + string(end) + " "
 		} else {
-			str += "and a.end_time<=" + string(end) + " "
+			sql += "and a.end_time<=" + string(end) + " "
 		}
 	}
 	s := fmt.Sprintf("limit 10 offset %d", offset)
-	str += s
-	rows, err := globalVariable.DB.Query(str)
+	sql += s
+	rows, err := globalVariable.DB.Queryx(sql)
 	return rows, err
 }
 
-func QueryCommentMsg(actId string, page uint) (*sql.Rows, error) {
+func QueryCommentMsg(actId uint, page uint) (*sqlx.Rows, error) {
 	offset := page * 10
-	str := fmt.Sprintf("select user_id, content, created_at from comments_tab where activity_id=%s limit 10 offset %d", actId, offset)
-	rows, err := globalVariable.DB.Query(str)
+	sql := "select user_id, content, created_at from comments_tab where activity_id=? limit ? offset ?"
+	rows, err := globalVariable.DB.Queryx(sql, actId, 10, offset)
 	return rows, err
 }
 
 func QueryUserName(userId uint) (string, error) {
 	var userName string
-	str := fmt.Sprintf("select name from user_tab where id=%d", userId)
-	err := globalVariable.DB.QueryRow(str).Scan(&userName)
+	sql := "select name from user_tab where id=?"
+	err := globalVariable.DB.QueryRowx(sql, userId).Scan(&userName)
 	return userName, err
 }
 
 func AddForm(form model.Form) error {
-	str := fmt.Sprintf("insert into form_tab(activity_id, user_id, joined_at) values(%d, %d, %d)", form.ActId, form.UserId, form.JoinedAt)
-	_, err := globalVariable.DB.Exec(str)
+	sql := "insert into form_tab(activity_id, user_id, joined_at) values(:activity_id, :user_id, :joined_at)"
+	_, err := globalVariable.DB.NamedExec(sql, &form)
 	return err
 }
 
 func DeleteForm(userId uint, actId uint) error {
-	str := fmt.Sprintf("delete from form_tab where user_id=%d and activity_id=%d", userId, actId)
-	_, err := globalVariable.DB.Exec(str)
+	sql := "delete from form_tab where user_id=? and activity_id=?"
+	_, err := globalVariable.DB.Exec(sql, userId, actId)
 	return err
 }
 
 func QueryActivityMsg(actId uint) (string, uint, uint, error) {
 	var title string
 	var start, end uint
-	str := fmt.Sprintf("select title, start_time, end_time from activities_tab where id=%d", actId)
-	err := globalVariable.DB.QueryRow(str).Scan(&title, &start, &end)
+	sql := "select title, start_time, end_time from activities_tab where id=?"
+	row := globalVariable.DB.QueryRowx(sql, actId)
+	err := row.Scan(&title, &start, &end)
 	return title, start, end, err
 }
 
-func GetAllJoinActivities(userId uint) (*sql.Rows, error) {
-	str := fmt.Sprintf("select activity_id from form_tab where user_id=%d", userId)
-	rows, err := globalVariable.DB.Query(str)
+func GetAllJoinActivities(userId uint) (*sqlx.Rows, error) {
+	sql := "select activity_id from form_tab where user_id=?"
+	rows, err := globalVariable.DB.Queryx(sql, userId)
 	return rows, err
 }
 
-func QueryUsersMsg(userId uint, obj *model.ActivityUserListResponse) error {
-	str := fmt.Sprintf("select name, avatar from user_tab where id=%d", userId)
-	err := globalVariable.DB.QueryRow(str).Scan(&obj.Name, &obj.Avatar)
-	return err
+func QueryUsersMsg(userId uint) *sqlx.Row {
+	sql := "select name, avatar from user_tab where id=?"
+	row := globalVariable.DB.QueryRowx(sql, userId)
+	return row
 }
 
-func QueryAllUsersId(actId string) (*sql.Rows, error) {
-	str := fmt.Sprintf("select user_id from form_tab where activity_id=%s", actId)
-	return globalVariable.DB.Query(str)
+func QueryAllUsersId(actId uint) (*sqlx.Rows, error) {
+	sql := "select user_id from form_tab where activity_id=?"
+	return globalVariable.DB.Queryx(sql, actId)
 }
 
-func QueryActivityDetail(actId uint) (*model.ActivityDetail, error) {
-	var data model.ActivityDetail
-	str := fmt.Sprintf("select title, content, location, start_time, end_time from activities_tab where id=%d", actId)
-	err := globalVariable.DB.QueryRow(str).Scan(&data.Title, &data.Start, &data.End, &data.Location, &data.Location, &data.Content)
-	return &data, err
+func QueryActivityDetail(actId uint) (*sqlx.Row) {
+	sql := "select title, content, location, start_time, end_time from activities_tab where id=?"
+	return globalVariable.DB.QueryRowx(sql, actId)
 }
 
 func InsertActvity(act model.Activity) error {
-	str := fmt.Sprintf("insert into activities_tab(type_id, title, content, locatoin, start_time, end_time) values(%d, '%s', '%s', '%s', '%d', '%d')", act.TypeId, act.Title, act.Content, act.Location, act.Start, act.End)
+	str := fmt.Sprintf("insert into activities_tab(type_id, title, content, location, start_time, end_time) values(%d, '%s', '%s', '%s', '%d', '%d')", act.TypeId, act.Title, act.Content, act.Location, act.Start, act.End)
 	_, err := globalVariable.DB.Exec(str)
 	return err
 }
@@ -182,56 +183,60 @@ func DeleteActivity(actId uint) error {
 
 func UpdateActivity(id, typeId uint, title, content, location string, start, end uint) error {
 	var flag = 0
+	sid := fmt.Sprintf("%d", id)
+	stypeId := fmt.Sprintf("%d", typeId)
+	sstart := fmt.Sprintf("%d", start)
+	send := fmt.Sprintf("%d", end)
 	str := "update activities_tab "
 	if typeId != 0 {
 		if flag == 0 {
-			str += "set type_id=" + string(typeId) + " "
+			str += "set type_id=" + stypeId + " "
 			flag = 1
 		} else {
-			str += ", type_id=" + string(typeId) + " "
+			str += ", type_id=" + stypeId + " "
 		}
 	}
 	if title != "" {
 		if flag == 0 {
-			str += "set title=" + string(title) + " "
+			str += "set title='" + string(title) + "' "
 			flag = 1
 		} else {
-			str += ", title=" + string(title) + " "
+			str += ", title='" + string(title) + "' "
 		}
 	}
 	if content != "" {
 		if flag == 0 {
-			str += "set content=" + string(content) + " "
+			str += "set content='" + string(content) + "' "
 			flag = 1
 		} else {
-			str += ", content=" + string(content) + " "
+			str += ", content='" + string(content) + "' "
 		}
 	}
 	if location != "" {
 		if flag == 0 {
-			str += "set location=" + string(location) + " "
+			str += "set location='" + string(location) + "' "
 			flag = 1
 		} else {
-			str += ", location=" + string(location) + " "
+			str += ", location='" + string(location) + "' "
 		}
 	}
 	if start != 0 {
 		if flag == 0 {
-			str += "set start_time=" + string(start) + " "
+			str += "set start_time=" + sstart + " "
 			flag = 1
 		} else {
-			str += ", start_time=" + string(start) + " "
+			str += ", start_time=" + sstart + " "
 		}
 	}
 	if end != 0 {
 		if flag == 0 {
-			str += "set end_time=" + string(end) + " "
+			str += "set end_time=" + send + " "
 			flag = 1
 		} else {
-			str += ", end_time=" + string(end) + " "
+			str += ", end_time=" + send + " "
 		}
 	}
-	str += "where id=" + string(id)
+	str += "where id=" + sid
 	_, err := globalVariable.DB.Exec(str)
 	return err
 }
@@ -260,10 +265,11 @@ func QueryAllUserMsg() (*sql.Rows, error) {
 
 func UpdateActivityType(id uint, name string) error {
 	str := "update activities_type_tab "
+	sid := fmt.Sprintf("%d", id)
 	if name != "" {
-		str += "set name=" + name
+		str += "set name='" + name + "' "
 	}
-	str += "where id=" + string(id)
+	str += "where id=" + sid
 	_, err := globalVariable.DB.Exec(str)
 	return err
 }

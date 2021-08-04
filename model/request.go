@@ -36,8 +36,8 @@ type JoinOrExitRequest struct {
 //显示活动详情请求参数
 type ActivityInfoRequest struct {
 	SessionId   uint `json:"sessionId"`
-	ActivityId  uint `json:"sessionId"`
-	CommentPage uint `json:"commentPage"`
+	ActivityId  uint `json:"activityId"`
+	CommentPage uint `json:"page"`
 }
 
 //活动过滤器请求参数
@@ -71,7 +71,7 @@ type AddActivityRequest struct {
 //删除活动函数的请求参数
 type DelActivityRequest struct {
 	SessionId uint `json:"sessionId"`
-	ActId     uint `json:"actId"`
+	ActId     uint `json:"activityId"`
 }
 
 //编辑活动函数的请求参数
@@ -89,7 +89,7 @@ type EditActivityRequest struct {
 //添加活动类型的请求参数
 type AddActivityTypeRequest struct {
 	SessionId uint   `json:"sessionId"`
-	TypeName  string `json:"TypeName"`
+	TypeName  string `json:"typeName"`
 }
 
 //删除活动类型的请求参数
@@ -99,7 +99,7 @@ type DelActivityTypeRequest struct {
 }
 
 type ShowActivityTypeRequest struct {
-	SessoinId uint `json:"sessoinId"`
+	SessoinId uint `json:"sessionId"`
 }
 
 type ShowAllUsersRequest struct {
