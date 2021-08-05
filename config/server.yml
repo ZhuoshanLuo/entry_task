@@ -1,4 +1,4 @@
-db:
+database:
   driver: "mysql"
   sqlUser: "root"
   passwd: "Luo2566288"

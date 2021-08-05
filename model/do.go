@@ -29,12 +29,12 @@ type Session struct {
 }
 
 type Activity struct {
-	TypeId   uint   `db:"typeId"`
-	Title    string `db:"title"`
-	Content  string `db:"content"`
-	Location string `db:"location"`
-	Start    uint   `db:"start"`
-	End      uint   `db:"end"`
+	TypeId    uint   `db:"type_id"`
+	Title     string `db:"title"`
+	Content   string `db:"content"`
+	Location  string `db:"location"`
+	StartTime uint   `db:"start_time"`
+	EndTime   uint   `db:"end_time"`
 }
 
 type ActivityType struct {

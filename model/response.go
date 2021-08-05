@@ -1,31 +1,34 @@
 package model
 
-import "example.com/greetings/codes"
+import "github.com/ZhuoshanLuo/entry_task/codes"
 
-type ShowActivitiesResponse struct {
-	Title      string `json:"title"`
-	Start      uint   `json:"start"`
-	End        uint   `json:"end"`
-	JoinStatus bool   `json:"status"`
-}
-
-type ActivitySelectorResponse struct {
-	Title      string `json:"title"`
-	Start      uint   `json:"start"`
-	End        uint   `json:"end"`
-	JoinStatus bool   `json:"joinStatus"`
-}
-
-type ShowJoinedActivitiesResponse struct {
+type ActivityProfile struct {
 	Title string `json:"title"`
 	Start uint   `json:"start"`
 	End   uint   `json:"end"`
 }
 
+type ShowJoinedActivityResponse struct {
+	Activities []*ActivityProfile `json:"activities"`
+}
+
+type UserActivityInfo struct {
+	ActivityProfile `json:"activity_profile"`
+	JoinStatus      bool `json:"join_status"`
+}
+
+type ShowActivitiesResponse struct {
+	Activities []*UserActivityInfo `json:"activities"`
+}
+
+type ActivitySelectorResponse struct {
+	Activities []*UserActivityInfo `json:"activities"`
+}
+
 type ActivityInfoResponse struct {
 	*ActivityDetail
 	JoinStatus  bool `json:"joinStatus"`
-	UserList    []ActivityUserListResponse
+	UserList    []UserPublicMsg
 	CommentList []CommentListResponse
 }
 
@@ -33,11 +36,6 @@ type CommentListResponse struct {
 	Name      string `json:"name"`
 	Content   string `json:"content"`
 	CreatedAt uint   `json:"createdAt"`
-}
-
-type ActivityUserListResponse struct {
-	Name   string `db:"name"`
-	Avatar string `db:"avatar"`
 }
 
 //结构体
@@ -59,8 +57,8 @@ type ShowActivityTypeResponse struct {
 	TypeName string `json:"typeName"`
 }
 
-type ShowAllUsersResponse struct {
-	Name    string `json:"name"`
-	Email   string `json:"email"`
-	Avatart string `json:"avatar"`
+type UserPublicMsg struct {
+	Name   string `db:"name"`
+	Email  string `db:"email"`
+	Avatar string `db:"avatar"`
 }

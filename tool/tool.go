@@ -1,17 +1,16 @@
-package svc
+package tool
 
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"example.com/greetings/codes"
-	"example.com/greetings/constant"
-	"example.com/greetings/dao"
-	"example.com/greetings/model"
 	"fmt"
+	"github.com/ZhuoshanLuo/entry_task/constant"
+	"github.com/ZhuoshanLuo/entry_task/model"
 	"gopkg.in/yaml.v2"
 	"hash/crc32"
 	"io/ioutil"
 	"log"
+	"runtime/debug"
 	"time"
 )
 
@@ -36,39 +35,20 @@ func CreateSessionId(s uint) uint {
 	return 0
 }
 
-func GetTime() uint {
+func GetTimeNowUnix() uint {
 	return uint(time.Now().Unix())
-}
-
-func ResponseFun(code codes.Code, data interface{}) model.Response {
-	res := model.Response{
-		Code: code,
-		Msg:  codes.Errorf(code),
-	}
-	if data != nil {
-		res.Data = data
-	}
-	return res
 }
 
 func GetConf(c *model.Config) {
 	yamlFile, err := ioutil.ReadFile("./config/server.yml")
 	if err != nil {
-		log.Printf("yamlFile.Get err   #%v ", err)
+		FatalPrintln("Get yamlFile error", 0, debug.Stack())
 	}
 
 	err = yaml.Unmarshal(yamlFile, c)
-	fmt.Println(c.Db.Driver, c.Db.Passwd)
+	fmt.Println(c.Database.Driver, c.Database.Passwd)
 	if err != nil {
+		FatalPrintln("Unmarshal config", 0, debug.Stack())
 		log.Fatalf("Unmarshal: %v", err)
 	}
-}
-
-func CheckIdentity(sessionId uint) (bool, error) {
-	userId, err := dao.QueryUserId(sessionId)
-	if err != nil {
-		return false, err
-	}
-	//在user表中查找权限
-	return dao.QueryUserAdmin(userId)
 }

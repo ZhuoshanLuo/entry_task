@@ -1,48 +1,43 @@
 package model
 
-//用户api请求参数
-//注册函数请求参数
-type RegisterRequest struct {
+//通用api
+type RegisterMsg struct {
 	Name   string `json:"name"`
-	Passwd string `json:"Passwd"`
+	Passwd string `json:"passwd"`
 	Email  string `json:"email"`
-	Avatar string `json:"image"`
+	Avatar string `json:"avatar"`
 }
 
+//用户api请求参数
 //登陆函数请求参数
-type LoginRequest struct {
+type LoginMsg struct {
 	Name   string `json:"name"`
-	Passwd string `json:"Passwd"`
+	Passwd string `json:"passwd"`
 }
 
 //显示所有活动函数请求参数
-type ShowActivityRequest struct {
-	SessionId uint `json:"sessionId"`
+type ShowActivtiyRequest struct {
+	SessionId uint `json:"session_id"`
 	Page      uint `json:"page"`
-}
-
-//用户加入的所有活动请求参数
-type ShowJoinedActivitiesRequest struct {
-	SessionId uint `json:"sessionId"`
 }
 
 //用户加入或退出活动请求参数
 type JoinOrExitRequest struct {
-	SessionId  uint `json:"sessionId"`
-	ActivityId uint `json:"activityId"`
+	SessionId  uint `json:"session_id"`
+	ActivityId uint `json:"activity_id"`
 	Action     uint `json:"action"`
 }
 
 //显示活动详情请求参数
 type ActivityInfoRequest struct {
-	SessionId   uint `json:"sessionId"`
-	ActivityId  uint `json:"activityId"`
-	CommentPage uint `json:"page"`
+	SessionId   uint `json:"session_id"`
+	ActivityId  uint `json:"activity_id"`
+	CommentPage uint `json:"comment_page"`
 }
 
 //活动过滤器请求参数
 type ActivitySelectorRequest struct {
-	SessionId uint   `json:"sessionId"`
+	SessionId uint   `json:"session_id"`
 	Type      string `json:"type"`
 	Start     uint   `json:"start"`
 	End       uint   `json:"end"`
@@ -51,27 +46,27 @@ type ActivitySelectorRequest struct {
 
 //发表评论函数请求参数
 type CreateCommentRequest struct {
-	SessionId  uint   `json:"sessionId"`
-	ActivityId uint   `json:"activityId"`
+	SessionId  uint   `json:"session_id"`
+	ActivityId uint   `json:"activity_id"`
 	Content    string `json:"content"`
 }
 
 //运营后台api请求参数
 //添加活动函数的请求参数
 type AddActivityRequest struct {
-	SessionId uint   `json:"sessionId"`
-	TypeId    uint   `json:"typeId"`
+	SessionId uint   `json:"session_id"`
+	TypeId    uint   `json:"type_id"`
 	Title     string `json:"title"`
 	Content   string `json:"content"`
 	Location  string `json:"location"`
 	Start     uint   `json:"start"`
-	End       uint   `json:"End"`
+	End       uint   `json:"end"`
 }
 
 //删除活动函数的请求参数
 type DelActivityRequest struct {
-	SessionId uint `json:"sessionId"`
-	ActId     uint `json:"activityId"`
+	SessionId uint `json:"session_id"`
+	ActId     uint `json:"act_id"`
 }
 
 //编辑活动函数的请求参数
@@ -88,26 +83,22 @@ type EditActivityRequest struct {
 
 //添加活动类型的请求参数
 type AddActivityTypeRequest struct {
-	SessionId uint   `json:"sessionId"`
-	TypeName  string `json:"typeName"`
+	SessionId uint   `json:"session_id"`
+	TypeName  string `json:"type_name"`
 }
 
 //删除活动类型的请求参数
 type DelActivityTypeRequest struct {
-	SessionId uint `json:"sessionId"`
+	SessionId uint `json:"session_id"`
 	Id        uint `json:"id"`
 }
 
-type ShowActivityTypeRequest struct {
-	SessoinId uint `json:"sessionId"`
-}
-
-type ShowAllUsersRequest struct {
-	SessionId uint `json:"sessionId"`
-}
-
 type EditActivityTypeRequest struct {
-	SessionId uint   `json:"sessionId"`
+	SessionId uint   `json:"session_id"`
 	Id        uint   `json:"id"`
 	Name      string `json:"name"`
+}
+
+type SessionId struct {
+	Id uint `json:"id"`
 }

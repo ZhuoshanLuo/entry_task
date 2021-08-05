@@ -1,4 +1,4 @@
-module example.com/greetings
+module github.com/ZhuoshanLuo/entry_task
 
 go 1.16
 
