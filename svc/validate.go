@@ -63,6 +63,7 @@ func showActivities(c *gin.Context) (codes.Code, interface{}) {
 		return codes.BindJsonError, nil
 	}
 
+	//分页显示
 	if req.Page == 0 {
 		tool.ErrorPrintln("request parameters is empty", 0, nil)
 		return codes.MissParameter, nil
@@ -91,7 +92,7 @@ func createComment(c *gin.Context) (codes.Code, interface{}) {
 		return codes.BindJsonError, nil
 	}
 
-	//传入内容不能为空
+	//登陆后才能评论，评论的活动和内容不为空
 	if req.SessionId == 0 || req.ActivityId == 0 || req.Content == "" {
 		tool.ErrorPrintln("request parameters is empty", 0, nil)
 		return codes.MissParameter, nil
@@ -247,6 +248,7 @@ func editActivity(c *gin.Context) (codes.Code, interface{}) {
 		return codes.BindJsonError, nil
 	}
 
+	//编辑的活动id不能为空，管理人员需要在登陆状态
 	if req.Id == 0 || req.SessionId == 0 {
 		tool.ErrorPrintln("request parameters is empty", 0, nil)
 		return codes.MissParameter, nil
@@ -274,7 +276,7 @@ func addActivityType(c *gin.Context) (codes.Code, interface{}) {
 		return codes.BindJsonError, nil
 	}
 
-	//缺少参数
+	//session不能为空，编辑的活动类型不能为空
 	if req.SessionId == 0 || req.TypeName == "" {
 		tool.ErrorPrintln("request parameters is empty", 0, nil)
 		return codes.MissParameter, nil
@@ -330,6 +332,7 @@ func editActivityType(c *gin.Context) (codes.Code, interface{}) {
 		return codes.BindJsonError, nil
 	}
 	sessionId, typeId, name := req.SessionId, req.Id, req.Name
+
 	if sessionId == 0 || typeId == 0 || name == "" {
 		tool.ErrorPrintln("request parameters is empty", 0, nil)
 		return codes.MissParameter, nil

@@ -20,7 +20,22 @@ func CheckIdentity(sessionId uint) (uint, bool, error) {
 	return userId, isAdmin, err
 }
 
+/*
 //运营人员注册接口
+发送：
+{
+    "name" : "zgmm",
+    "passwd" : "12345678",
+    "email" : "abcdefge",
+    "avatar" : ""
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": null
+}
+*/
 func doManageRegister(req model.RegisterMsg) (codes.Code, interface{}) {
 	name, passwd, email, avatar := req.Name, req.Passwd, req.Email, req.Avatar
 
@@ -43,7 +58,20 @@ func doManageRegister(req model.RegisterMsg) (codes.Code, interface{}) {
 	return codes.OK, nil
 }
 
+/*
 //运营人员登陆接口
+发送：
+{
+    "name" : "zgmm",
+    "passwd" : "12345678"
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": 1281784366
+}
+*/
 func doManageLogin(req model.LoginMsg) (codes.Code, interface{}) {
 	name, reqPasswd := req.Name, req.Passwd
 
@@ -84,7 +112,25 @@ func doManageLogin(req model.LoginMsg) (codes.Code, interface{}) {
 	return codes.OK, session.Id
 }
 
+/*
 //添加活动
+发送：
+{
+    "session_id" : 3580832333,
+    "type_id" : 1,
+    "title" : "b",
+    "content" : "test",
+    "location" : "b",
+    "start" : 2,
+    "end" : 2
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": null
+}
+*/
 func doAddActivity(req model.AddActivityRequest, userId uint) (codes.Code, interface{}) {
 	typeId, title, content := req.TypeId, req.Title, req.Content
 	location, start, end := req.Location, req.Start, req.End
@@ -103,7 +149,20 @@ func doAddActivity(req model.AddActivityRequest, userId uint) (codes.Code, inter
 	return codes.OK, nil
 }
 
+/*
 //删除活动
+发送：
+{
+    "sessionId" : 3580832660,
+    "activityId" : 2
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": null
+}
+*/
 func doDelActivity(req model.DelActivityRequest, userId uint) (codes.Code, interface{}) {
 	actId := req.ActId
 
@@ -115,7 +174,22 @@ func doDelActivity(req model.DelActivityRequest, userId uint) (codes.Code, inter
 	return codes.OK, nil
 }
 
+/*
 //编辑活动
+发送：
+{
+    "sessionId" : 3580832660,
+    "id" : 1,
+    "content" : "test",
+    "typeId" : 2
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": null
+}
+*/
 func doEditActivity(req model.EditActivityRequest, userId uint) (codes.Code, interface{}) {
 	id, typeId, title, content := req.Id, req.TypeId, req.Title, req.Content
 	location, start, end := req.Location, req.Start, req.End
@@ -130,7 +204,20 @@ func doEditActivity(req model.EditActivityRequest, userId uint) (codes.Code, int
 	return codes.OK, nil
 }
 
+/*
 //添加活动类型
+发送：
+{
+    "session_id" : 3580832660,
+    "type_name" : "sport"
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": null
+}
+*/
 func doAddActivityType(req model.AddActivityTypeRequest, userId uint) (codes.Code, interface{}) {
 	TypeName := req.TypeName
 
@@ -146,7 +233,26 @@ func doAddActivityType(req model.AddActivityTypeRequest, userId uint) (codes.Cod
 	return codes.OK, nil
 }
 
+/*
 //显示所有活动类型
+发送：
+{
+    "sessionId" : 3580832660
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": [
+        {
+            "typeName": "typeOne"
+        },
+        {
+            "typeName": "typeTwo"
+        }
+    ]
+}
+*/
 func doShowActivityType(req model.SessionId, userId uint) (codes.Code, interface{}) {
 	rows, err := dao.QueryAllActivityType()
 	if err != nil {
@@ -168,7 +274,21 @@ func doShowActivityType(req model.SessionId, userId uint) (codes.Code, interface
 	return codes.OK, objects
 }
 
+/*
 //编辑活动类型
+发送：
+{
+    "sessionId" : 3580832660,
+    "id" : 4,
+    "name" : "typeFour"
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": null
+}
+*/
 func doEditActivityType(req model.EditActivityTypeRequest, userId uint) (codes.Code, interface{}) {
 	typeId, name := req.Id, req.Name
 
@@ -182,7 +302,20 @@ func doEditActivityType(req model.EditActivityTypeRequest, userId uint) (codes.C
 	return codes.OK, nil
 }
 
+/*
 //删除活动类型
+发送：
+{
+    "sessionId" : 3580832660,
+    "id" : 4
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": null
+}
+*/
 func doDelActivityType(req model.DelActivityTypeRequest, userId uint) (codes.Code, interface{}) {
 	typeId := req.Id
 
@@ -196,7 +329,30 @@ func doDelActivityType(req model.DelActivityTypeRequest, userId uint) (codes.Cod
 	return codes.OK, nil
 }
 
+/*
 //显示所有用户
+发送：
+{
+    "sessionId" : 3580832660
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": [
+        {
+            "name": "lfp",
+            "email": "123456",
+            "avatar": ""
+        },
+        {
+            "name": "lzs",
+            "email": "lzs@shopee.com",
+            "avatar": ""
+        }
+    ]
+}
+*/
 func doShowAllUsers(req model.SessionId, userId uint) (codes.Code, interface{}) {
 
 	rows, err := dao.QueryAllUserMsg()

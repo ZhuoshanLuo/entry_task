@@ -12,7 +12,22 @@ import (
 
 type Handler func(c *gin.Context) (codes.Code, interface{})
 
+/*
 //用户注册接口
+发送：
+{
+    "name" : "lss",
+    "passwd" : "hahahaha",
+    "email" : "123456789",
+    "avatar" : ""
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": null
+}
+*/
 func doRegister(req model.RegisterMsg) (codes.Code, interface{}) {
 	name, passwd, email, avatar := req.Name, req.Passwd, req.Email, req.Avatar
 
@@ -35,7 +50,20 @@ func doRegister(req model.RegisterMsg) (codes.Code, interface{}) {
 	return codes.OK, nil
 }
 
+/*
 //用户登陆接口,允许重复登陆
+发送：
+{
+    "name" : "lss",
+    "passwd" : "hahahaha"
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": 996231864
+}
+*/
 func doLogin(req model.LoginMsg) (codes.Code, interface{}) {
 	name, passwd := req.Name, req.Passwd
 
@@ -76,7 +104,31 @@ func doLogin(req model.LoginMsg) (codes.Code, interface{}) {
 	return codes.OK, session.Id
 }
 
+/*
 //显示所有活动
+发送：
+{
+    "session_id" : 1259060791,
+    "page" : 0
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": {
+        "activities": [
+            {
+                "activity_profile": {
+                    "title": "a",
+                    "start": 1,
+                    "end": 1
+                },
+                "join_status": true
+            }
+        ]
+    }
+}
+*/
 func doShowActivities(req model.ShowActivtiyRequest) (codes.Code, interface{}) {
 	sessionId, page := req.SessionId, req.Page
 
@@ -124,7 +176,30 @@ func doShowActivities(req model.ShowActivtiyRequest) (codes.Code, interface{}) {
 	return codes.OK, objects
 }
 
+/*
 //活动过滤器
+发送：
+{
+    "session_id" : 1259060791
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": {
+        "activities": [
+            {
+                "activity_profile": {
+                    "title": "a",
+                    "start": 1,
+                    "end": 1
+                },
+                "join_status": true
+            }
+        ]
+    }
+}
+*/
 func doActivitiesSelector(req model.ActivitySelectorRequest) (codes.Code, interface{}) {
 	sessionId, actType, start, end, page := req.SessionId, req.Type, req.Start, req.End, req.Page
 
@@ -169,7 +244,21 @@ func doActivitiesSelector(req model.ActivitySelectorRequest) (codes.Code, interf
 	return codes.OK, objects
 }
 
+/*
 //发表评论
+发送：
+{
+    "session_id" : 996231864,
+    "activity_id" : 1,
+    "content" : "good"
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": null
+}
+*/
 func doCreateComment(req model.CreateCommentRequest) (codes.Code, interface{}) {
 	sessionId, activityId, content := req.SessionId, req.ActivityId, req.Content
 
@@ -196,7 +285,27 @@ func doCreateComment(req model.CreateCommentRequest) (codes.Code, interface{}) {
 	return codes.OK, nil
 }
 
+/*
 //显示用户加入的所有活动
+发送：
+{
+    "id" : 2768625435
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": {
+        "activities": [
+            {
+                "title": "a",
+                "start": 1,
+                "end": 1
+            }
+        ]
+    }
+}
+*/
 func doShowJoinedActivities(req model.SessionId) (codes.Code, interface{}) {
 	sessionId := req.Id
 
@@ -233,7 +342,21 @@ func doShowJoinedActivities(req model.SessionId) (codes.Code, interface{}) {
 	return codes.OK, objects
 }
 
+/*
 //用户加入或退出活动
+发送：
+{
+    "session_id" : 1259060791,
+    "activity_id" : 1,
+    "action" : 2  //1表示加入，2表示退出
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": null
+}
+*/
 func doJoinOrExit(req model.JoinOrExitRequest) (codes.Code, interface{}) {
 	sessionId, actId, action := req.SessionId, req.ActivityId, req.Action
 
@@ -340,6 +463,42 @@ func GetCommentsList(actId uint, page uint) (codes.Code, []model.CommentListResp
 	return codes.OK, objects
 }
 
+/*
+//显示活动详情
+发送：
+{
+    "session_id" : 2768625435,
+    "activity_id" : 1,
+    "comment_page" : 0
+}
+接收：
+{
+    "code": 0,
+    "msg": "Success!",
+    "data": {
+        "Title": "a",
+        "Start": 1,
+        "End": 1,
+        "Location": "a",
+        "Content": "test",
+        "joinStatus": true,
+        "UserList": [
+            {
+                "Name": "lfp",
+                "Email": "",
+                "Avatar": ""
+            }
+        ],
+        "CommentList": [
+            {
+                "name": "lfp",
+                "content": "skr",
+                "createdAt": 1627888219
+            }
+        ]
+    }
+}
+*/
 func doActivityInfo(req model.ActivityInfoRequest) (codes.Code, interface{}) {
 	sessionId, actId, page := req.SessionId, req.ActivityId, req.CommentPage
 
