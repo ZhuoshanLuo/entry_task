@@ -36,7 +36,7 @@ func InsertComment(obj model.Comment) error {
 
 func InsertActivityType(obj model.ActivityType) error {
 	sql := "insert into activities_type_tab(name) values(:name)"
-	_, err := DB.Exec(sql, &obj)
+	_, err := DB.NamedExec(sql, &obj)
 	return err
 }
 
@@ -195,8 +195,9 @@ func QueryActivityDetail(actId uint) *sqlx.Row {
 
 func QueryUserAdmin(userId uint) (bool, error) {
 	var isAdmin bool
-	str := fmt.Sprintf("select is_admin from user_tab where id=%d", userId)
-	err := DB.QueryRow(str).Scan(&isAdmin)
+	sql := "select is_admin from user_tab where id=?"
+	row := DB.QueryRowx(sql, userId)
+	err := row.Scan(&isAdmin)
 	return isAdmin, err
 }
 

@@ -3,46 +3,18 @@ package svc
 import (
 	"database/sql"
 	"github.com/ZhuoshanLuo/entry_task/codes"
-	"github.com/ZhuoshanLuo/entry_task/constant"
 	"github.com/ZhuoshanLuo/entry_task/dao"
 	"github.com/ZhuoshanLuo/entry_task/model"
 	"github.com/ZhuoshanLuo/entry_task/tool"
 	"github.com/gin-gonic/gin"
-	"regexp"
 	"runtime/debug"
 )
 
 type Handler func(c *gin.Context) (codes.Code, interface{})
 
-var (
-	Register             = NewHandlerFunc(doRegister)
-	Login                = NewHandlerFunc(doLogin)
-	ShowActivities       = NewHandlerFunc(doShowActivities)
-	ActivitiesSelector   = NewHandlerFunc(doActivitiesSelector)
-	ActivityInfo         = NewHandlerFunc(doActivityInfo)
-	CreateComment        = NewHandlerFunc(doCreateComment)
-	ShowJoinedActivities = NewHandlerFunc(doShowJoinedActivities)
-	JoinOrExit           = NewHandlerFunc(doJoinOrExit)
-)
-
 //用户注册接口
-func doRegister(c *gin.Context) (codes.Code, interface{}) {
-	//提取请求参数
-	var req model.RegisterMsg
-	err := c.BindJSON(&req)
-	if err != nil {
-		tool.ErrorPrintln("bind json error!", 0, debug.Stack())
-		return codes.BindJsonError, nil
-	}
+func doRegister(req model.RegisterMsg) (codes.Code, interface{}) {
 	name, passwd, email, avatar := req.Name, req.Passwd, req.Email, req.Avatar
-
-	//传入的用户名、密码和邮箱不能为空或不符合pattern（头像可为空）
-	isMatch1, _ := regexp.MatchString(constant.NamePattern, name)
-	isMatch2, _ := regexp.MatchString(constant.PasswdPattern, passwd)
-	if name == "" || passwd == "" || email == "" || !isMatch1 || !isMatch2 {
-		tool.ErrorPrintln("request parameters is empty", 0, nil)
-		return codes.MissParameter, nil
-	}
 
 	//插入数据到user表中
 	var user model.User
@@ -64,21 +36,8 @@ func doRegister(c *gin.Context) (codes.Code, interface{}) {
 }
 
 //用户登陆接口,允许重复登陆
-func doLogin(c *gin.Context) (codes.Code, interface{}) {
-	//提取请求参数
-	var req model.LoginMsg
-	err := c.BindJSON(&req)
-	if err != nil {
-		tool.ErrorPrintln("bind json error", 0, debug.Stack())
-		return codes.BindJsonError, nil
-	}
+func doLogin(req model.LoginMsg) (codes.Code, interface{}) {
 	name, passwd := req.Name, req.Passwd
-
-	//传入的用户名和密码不能为空
-	if name == "" || passwd == "" {
-		tool.ErrorPrintln("request parameters is empty", 0, nil)
-		return codes.MissParameter, nil
-	}
 
 	passwd = tool.AddSalt(passwd) //密码加盐
 	userId, passwd, err := dao.QueryUserIsExist(name)
@@ -94,7 +53,7 @@ func doLogin(c *gin.Context) (codes.Code, interface{}) {
 
 	//用户是否已经登陆
 	sessionId, err := dao.QueryUserIsLogin(userId)
-	if err != nil {
+	if err != sql.ErrNoRows && err != nil {
 		tool.ErrorPrintln("sql query user is login error", userId, debug.Stack())
 		return codes.MysqlError, nil
 	}
@@ -118,17 +77,12 @@ func doLogin(c *gin.Context) (codes.Code, interface{}) {
 }
 
 //显示所有活动
-func doShowActivities(c *gin.Context) (codes.Code, interface{}) {
-	var req model.ShowActivtiyRequest
-	err := c.BindJSON(&req)
-	if err != nil {
-		tool.ErrorPrintln("bind json error", 0, debug.Stack())
-		return codes.BindJsonError, nil
-	}
+func doShowActivities(req model.ShowActivtiyRequest) (codes.Code, interface{}) {
 	sessionId, page := req.SessionId, req.Page
 
 	//如果用户是登陆状态，传入sessionId不为空
 	var userId uint
+	var err error
 	if sessionId != 0 {
 		userId, err = dao.QueryUserId(sessionId)
 		//数据库执行时错误
@@ -171,17 +125,12 @@ func doShowActivities(c *gin.Context) (codes.Code, interface{}) {
 }
 
 //活动过滤器
-func doActivitiesSelector(c *gin.Context) (codes.Code, interface{}) {
-	var req model.ActivitySelectorRequest
-	err := c.BindJSON(&req)
-	if err != nil {
-		tool.ErrorPrintln("bind json error", 0, debug.Stack())
-		return codes.BindJsonError, nil
-	}
+func doActivitiesSelector(req model.ActivitySelectorRequest) (codes.Code, interface{}) {
 	sessionId, actType, start, end, page := req.SessionId, req.Type, req.Start, req.End, req.Page
 
 	//如果用户是登陆状态，获取user_id
 	var userId uint
+	var err error
 	if sessionId != 0 {
 		userId, err = dao.QueryUserId(sessionId)
 		if err != nil {
@@ -221,20 +170,8 @@ func doActivitiesSelector(c *gin.Context) (codes.Code, interface{}) {
 }
 
 //发表评论
-func doCreateComment(c *gin.Context) (codes.Code, interface{}) {
-	var req model.CreateCommentRequest
-	err := c.BindJSON(&req)
-	if err != nil {
-		tool.ErrorPrintln("bind json error", 0, debug.Stack())
-		return codes.BindJsonError, nil
-	}
+func doCreateComment(req model.CreateCommentRequest) (codes.Code, interface{}) {
 	sessionId, activityId, content := req.SessionId, req.ActivityId, req.Content
-
-	//传入内容不能为空
-	if sessionId == 0 || activityId == 0 || content == "" {
-		tool.ErrorPrintln("request parameters is empty", 0, nil)
-		return codes.MissParameter, nil
-	}
 
 	//从session表中获取用户user id，查询不到session id对应的用户时也会报错
 	userId, err := dao.QueryUserId(sessionId)
@@ -260,20 +197,8 @@ func doCreateComment(c *gin.Context) (codes.Code, interface{}) {
 }
 
 //显示用户加入的所有活动
-func doShowJoinedActivities(c *gin.Context) (codes.Code, interface{}) {
-	var req model.SessionId
-	err := c.BindJSON(&req)
-	if err != nil {
-		tool.ErrorPrintln("bind json error", 0, debug.Stack())
-		return codes.BindJsonError, nil
-	}
+func doShowJoinedActivities(req model.SessionId) (codes.Code, interface{}) {
 	sessionId := req.Id
-
-	//用户需要在登陆状态，session_id不能为空
-	if sessionId == 0 {
-		tool.ErrorPrintln("request parameters is empty", 0, nil)
-		return codes.MissParameter, nil
-	}
 
 	//获取用户user_id
 	userId, err := dao.QueryUserId(sessionId)
@@ -309,20 +234,8 @@ func doShowJoinedActivities(c *gin.Context) (codes.Code, interface{}) {
 }
 
 //用户加入或退出活动
-func doJoinOrExit(c *gin.Context) (codes.Code, interface{}) {
-	var req model.JoinOrExitRequest
-	err := c.BindJSON(&req)
-	if err != nil {
-		tool.ErrorPrintln("bind json error", 0, debug.Stack())
-		return codes.BindJsonError, nil
-	}
+func doJoinOrExit(req model.JoinOrExitRequest) (codes.Code, interface{}) {
 	sessionId, actId, action := req.SessionId, req.ActivityId, req.Action
-
-	//传入参数都不能为空或格式错误
-	if sessionId == 0 || actId == 0 || action == 0 {
-		tool.ErrorPrintln("request parameters is empty", 0, nil)
-		return codes.MissParameter, nil
-	}
 
 	//查看用户是否登陆
 	userId, err := dao.QueryUserId(sessionId)
@@ -427,23 +340,12 @@ func GetCommentsList(actId uint, page uint) (codes.Code, []model.CommentListResp
 	return codes.OK, objects
 }
 
-func doActivityInfo(c *gin.Context) (codes.Code, interface{}) {
-	var req model.ActivityInfoRequest
-	err := c.BindJSON(&req)
-	if err != nil {
-		tool.ErrorPrintln("bind json error", 0, debug.Stack())
-		return codes.BindJsonError, nil
-	}
+func doActivityInfo(req model.ActivityInfoRequest) (codes.Code, interface{}) {
 	sessionId, actId, page := req.SessionId, req.ActivityId, req.CommentPage
-
-	//活动id是必要的参数
-	if actId == 0 {
-		tool.ErrorPrintln("request parameters is empty", 0, nil)
-		return codes.MissParameter, nil
-	}
 
 	//如果用户是登陆状态，获取用户的userid
 	var userId uint
+	var err error
 	if sessionId != 0 {
 		userId, err = dao.QueryUserId(sessionId)
 		if err != nil {
