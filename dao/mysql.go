@@ -10,7 +10,7 @@ var DB *sqlx.DB
 
 //数据库增加操作
 func InsertUser(user model.User) (uint, error) {
-	sql := "insert into user_tab(name, passwd, email, avatar, is_admin, created_at) values(:name, :passwd, :email, :avatar, :is_admin, :created_at)"
+	sql := "insert into users_tab(name, passwd, email, avatar, is_admin, created_at) values(:name, :passwd, :email, :avatar, :is_admin, :created_at)"
 	exec, err := DB.NamedExec(sql, &user)
 	if err != nil {
 		return 0, err

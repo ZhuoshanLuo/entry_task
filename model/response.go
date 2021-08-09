@@ -2,6 +2,19 @@ package model
 
 import "github.com/ZhuoshanLuo/entry_task/codes"
 
+//结构体
+
+type CodeMsg struct {
+	Code codes.Code `json:"code"`
+	Msg  string     `json:"msg"`
+}
+
+type Response struct {
+	Status     CodeMsg     `json:"status"`
+	Data       interface{} `json:"data"`
+	Session_id uint        `json:"session_id"`
+}
+
 type ActivityProfile struct {
 	Title string `json:"title"`
 	Start uint   `json:"start"`
@@ -27,7 +40,7 @@ type ActivitySelectorResponse struct {
 
 type ActivityInfoResponse struct {
 	*ActivityDetail
-	JoinStatus  bool `json:"joinStatus"`
+	JoinStatus  bool `json:"join_status"`
 	UserList    []UserPublicMsg
 	CommentList []CommentListResponse
 }
@@ -35,14 +48,7 @@ type ActivityInfoResponse struct {
 type CommentListResponse struct {
 	Name      string `json:"name"`
 	Content   string `json:"content"`
-	CreatedAt uint   `json:"createdAt"`
-}
-
-//结构体
-type Response struct {
-	Code codes.Code  `json:"code"`
-	Msg  string      `json:"msg"`
-	Data interface{} `json:"data"`
+	CreatedAt uint   `json:"created_at"`
 }
 
 type ActivityDetail struct {
@@ -54,7 +60,7 @@ type ActivityDetail struct {
 }
 
 type ShowActivityTypeResponse struct {
-	TypeName string `json:"typeName"`
+	TypeName string `json:"type_name"`
 }
 
 type UserPublicMsg struct {

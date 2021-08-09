@@ -4,6 +4,7 @@
 
 #### svc文件
     - handler.go:定义了处理函数。
+    - newhandler.go:处理函数的主体。
     - validate.go:检查参数是否合法 或 用户是否有权限访问。
     - user.go:用户接口的业务逻辑。
     - manage.go:管理员接口的业务逻辑。

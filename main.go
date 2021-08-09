@@ -43,5 +43,6 @@ func main() {
 	r.POST("/manage/edit_activity_type", svc.EditActivityType)
 	r.POST("/manage/del_activity_type", svc.DelActivityType)
 	r.POST("/manage/show_users", svc.ShowAllUsers)
+
 	r.Run() // 监听并在 0.0.0.0:8080 上启动服务
 }

@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS user_tab(
     passwd VARCHAR(20) NOT NULL,
     email VARCHAR(50) NOT NULL,
     Avatar VARCHAR(50) NOT NULL,
-    is_admin BOOLEAN NOT NULL,
+    is_admin BOOLEAN NOT NULL comment "is a manager",
     created_at INT UNSIGNED NOT NULL,
     PRIMARY KEY(id),
     UNIQUE KEY uniq_name(name),

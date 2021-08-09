@@ -5,30 +5,32 @@ import "net/http"
 type Code uint32
 
 const (
-	OK            Code = 0
-	Fail          Code = 1
-	MissParameter Code = 2
-	UserExist     Code = 3
-	MysqlError    Code = 4
-	UserNotExist  Code = 5
-	PassWordError Code = 6
-	NotLogin      Code = 7
-	BindJsonError Code = 8
-	Forbidden     Code = 9
+	OK             Code = 0
+	Fail           Code = 1
+	MissParameter  Code = 2
+	UserExist      Code = 3
+	MysqlError     Code = 4
+	UserNotExist   Code = 5
+	PassWordError  Code = 6
+	NotLogin       Code = 7
+	BindJsonError  Code = 8
+	Forbidden      Code = 9
+	ParameterError Code = 10
 )
 
 func HTTPStatusFromCode(code Code) int {
 	codes := map[Code]int{
-		OK:            http.StatusOK,
-		Fail:          http.StatusBadRequest,
-		MissParameter: http.StatusBadRequest,
-		UserExist:     http.StatusBadRequest,
-		MysqlError:    http.StatusInternalServerError,
-		UserNotExist:  http.StatusBadRequest,
-		PassWordError: http.StatusBadRequest,
-		NotLogin:      http.StatusBadRequest,
-		BindJsonError: http.StatusBadRequest,
-		Forbidden:     http.StatusForbidden,
+		OK:             http.StatusOK,
+		Fail:           http.StatusBadRequest,
+		MissParameter:  http.StatusBadRequest,
+		UserExist:      http.StatusBadRequest,
+		MysqlError:     http.StatusInternalServerError,
+		UserNotExist:   http.StatusBadRequest,
+		PassWordError:  http.StatusBadRequest,
+		NotLogin:       http.StatusBadRequest,
+		BindJsonError:  http.StatusBadRequest,
+		Forbidden:      http.StatusForbidden,
+		ParameterError: http.StatusBadRequest,
 	}
 	return codes[code]
 }
@@ -56,6 +58,8 @@ func Errorf(code Code) string {
 		codeMsg = "Bind json error!"
 	case Forbidden:
 		codeMsg = "You have no authority！"
+	case ParameterError:
+		codeMsg = "Parameter format error"
 	}
 	return codeMsg
 }
