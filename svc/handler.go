@@ -9,8 +9,9 @@ import (
 /*
 参数处理和权限处理文件
 */
-
+//注册
 func register(c *gin.Context) model.Response {
+	//参数校验
 	isValid, req := registerParameterValid(c)
 	if isValid == false {
 		return model.Response{
@@ -20,10 +21,13 @@ func register(c *gin.Context) model.Response {
 			},
 		}
 	}
+
 	return doRegister(*req)
 }
 
+//登陆
 func login(c *gin.Context) model.Response {
+	//参数校验
 	isValid, req := loginParameterValid(c)
 	if isValid == false {
 		return model.Response{
@@ -36,6 +40,7 @@ func login(c *gin.Context) model.Response {
 	return doLogin(*req)
 }
 
+//显示活动
 func showActivities(c *gin.Context) model.Response {
 	//用户是否登陆，如果登陆，从cookie中得到user id
 	userId, err := CheckUserLogin(c)
@@ -60,6 +65,7 @@ func showActivities(c *gin.Context) model.Response {
 	return doShowActivities(*req, userId)
 }
 
+//活动筛选器
 func activitiesSelector(c *gin.Context) model.Response {
 	//用户是否登陆，如果登陆，从cookie中得到user id
 	userId, err := CheckUserLogin(c)
@@ -84,6 +90,7 @@ func activitiesSelector(c *gin.Context) model.Response {
 	return doActivitiesSelector(*req, userId)
 }
 
+//创建评论
 func createComment(c *gin.Context) model.Response {
 	//用户是否登陆，如果登陆，从cookie中得到user id
 	userId, err := CheckUserLogin(c)
@@ -116,7 +123,9 @@ func createComment(c *gin.Context) model.Response {
 	return doCreateComment(*req, userId)
 }
 
+//显示加入的所有活动
 func showJoinedActivities(c *gin.Context) model.Response {
+	//用户是否登陆，如果登陆，从cookie中得到user id，本接口一定要在登陆态
 	userId, err := CheckUserLogin(c)
 	if err != nil {
 		return model.Response{
@@ -139,6 +148,7 @@ func showJoinedActivities(c *gin.Context) model.Response {
 	return doShowJoinedActivities(userId)
 }
 
+//加入或退出活动
 func joinOrExit(c *gin.Context) model.Response {
 	//用户是否登陆，如果登陆，从cookie中得到user id
 	userId, err := CheckUserLogin(c)
@@ -147,6 +157,14 @@ func joinOrExit(c *gin.Context) model.Response {
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
 				Msg:  codes.Errorf(codes.MysqlError),
+			},
+		}
+	}
+	if userId == 0 {
+		return model.Response{
+			Status: model.CodeMsg{
+				Code: codes.Forbidden,
+				Msg:  codes.Errorf(codes.Forbidden),
 			},
 		}
 	}
@@ -163,6 +181,7 @@ func joinOrExit(c *gin.Context) model.Response {
 	return doJoinOrExit(*req, userId)
 }
 
+//显示活动信息
 func activityInfo(c *gin.Context) model.Response {
 	//用户是否登陆，如果登陆，从cookie中得到user id
 	userId, err := CheckUserLogin(c)
@@ -188,7 +207,9 @@ func activityInfo(c *gin.Context) model.Response {
 	return doActivityInfo(*req, userId)
 }
 
+//注册
 func manageRegister(c *gin.Context) model.Response {
+	//参数校验
 	isValid, req := manageRegisterParameterValid(c)
 	if isValid == false {
 		return model.Response{
@@ -201,6 +222,7 @@ func manageRegister(c *gin.Context) model.Response {
 	return doManageRegister(*req)
 }
 
+//登陆
 func manageLogin(c *gin.Context) model.Response {
 	//参数校验
 	isValid, req := manageLoginParameterValid(c)
@@ -215,6 +237,7 @@ func manageLogin(c *gin.Context) model.Response {
 	return doManageLogin(*req)
 }
 
+//添加活动
 func addActivity(c *gin.Context) model.Response {
 	//身份验证
 	userId, isValid := CheckIdentity(c)
@@ -240,6 +263,7 @@ func addActivity(c *gin.Context) model.Response {
 	return doAddActivity(*req, userId)
 }
 
+//删除活动
 func delActivity(c *gin.Context) model.Response {
 	//身份验证
 	userId, isValid := CheckIdentity(c)
@@ -265,6 +289,7 @@ func delActivity(c *gin.Context) model.Response {
 	return doDelActivity(*req, userId)
 }
 
+//编辑活动
 func editActivity(c *gin.Context) model.Response {
 	//身份验证
 	userId, isValid := CheckIdentity(c)
@@ -290,6 +315,7 @@ func editActivity(c *gin.Context) model.Response {
 	return doEditActivity(*req, userId)
 }
 
+//添加活动类型
 func addActivityType(c *gin.Context) model.Response {
 	//身份验证
 	userId, isValid := CheckIdentity(c)
@@ -315,6 +341,7 @@ func addActivityType(c *gin.Context) model.Response {
 	return doAddActivityType(*req, userId)
 }
 
+//显示活动类型
 func showActivityType(c *gin.Context) model.Response {
 	//身份验证
 	userId, isValid := CheckIdentity(c)
@@ -326,11 +353,13 @@ func showActivityType(c *gin.Context) model.Response {
 			},
 		}
 	}
-	//没有其他必要传入参数
 
-	return doShowActivityType(userId)
+	isValid, req := ShowActivityTypeRequestParameterValid(c)
+
+	return doShowActivityType(*req, userId)
 }
 
+//编辑活动类型
 func editActivityType(c *gin.Context) model.Response {
 	//身份验证
 	userId, isValid := CheckIdentity(c)
@@ -356,6 +385,7 @@ func editActivityType(c *gin.Context) model.Response {
 	return doEditActivityType(*req, userId)
 }
 
+//删除活动类型
 func delActivityType(c *gin.Context) model.Response {
 	//身份验证
 	userId, isValid := CheckIdentity(c)
@@ -381,6 +411,7 @@ func delActivityType(c *gin.Context) model.Response {
 	return doDelActivityType(*req, userId)
 }
 
+//显示所有用户
 func showAllUsers(c *gin.Context) model.Response {
 	//身份验证
 	userId, isValid := CheckIdentity(c)
@@ -392,6 +423,16 @@ func showAllUsers(c *gin.Context) model.Response {
 			},
 		}
 	}
+	//参数校验
+	isValid, req := showAllUsersParameterValid(c)
+	if isValid == false {
+		return model.Response{
+			Status: model.CodeMsg{
+				Code: codes.ParameterError,
+				Msg:  codes.Errorf(codes.ParameterError),
+			},
+		}
+	}
 	//业务逻辑
-	return doShowAllUsers(userId)
+	return doShowAllUsers(*req, userId)
 }

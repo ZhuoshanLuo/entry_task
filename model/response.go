@@ -40,7 +40,6 @@ type ActivitySelectorResponse struct {
 
 type ActivityInfoResponse struct {
 	*ActivityDetail
-	JoinStatus  bool `json:"join_status"`
 	UserList    []UserPublicMsg
 	CommentList []CommentListResponse
 }
@@ -52,11 +51,12 @@ type CommentListResponse struct {
 }
 
 type ActivityDetail struct {
-	Title    string `db:"title"`
-	Start    uint   `db:"start_time"`
-	End      uint   `db:"end_time"`
-	Location string `db:"location"`
-	Content  string `db:"content"`
+	Title      string `db:"title"`
+	Start      uint   `db:"start_time"`
+	End        uint   `db:"end_time"`
+	Location   string `db:"location"`
+	Content    string `db:"content"`
+	JoinStatus bool   `json:"join_status"`
 }
 
 type ShowActivityTypeResponse struct {

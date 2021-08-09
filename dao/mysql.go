@@ -90,24 +90,26 @@ func QueryUserIsExist(name string) (uint, string, error) {
 }
 
 func QueryALLActivityRows(page uint) (*sqlx.Rows, error) {
-	offset := page * 10
+	offset := (page - 1) * 10
 	sql := "select id, title, start_time, end_time from activities_tab limit ? offset ?"
 	rows, err := DB.Queryx(sql, 10, offset)
 	return rows, err
 }
 
-func QueryAllUserMsg() (*sqlx.Rows, error) {
-	str := "select name, email, avatar from user_tab"
-	return DB.Queryx(str)
+func QueryAllUserMsg(page uint) (*sqlx.Rows, error) {
+	offset := (page - 1) * 10
+	str := "select name, email, avatar from user_tab limit ? offset ?"
+	return DB.Queryx(str, 10, offset)
 }
 
-func QueryAllActivityType() (*sqlx.Rows, error) {
-	sql := "select name from activities_type_tab"
-	return DB.Queryx(sql)
+func QueryAllActivityType(page uint) (*sqlx.Rows, error) {
+	offset := (page - 1) * 10
+	sql := "select name from activities_type_tab limit ? offset ?"
+	return DB.Queryx(sql, 10, offset)
 }
 
 func QueryCommentMsg(actId uint, page uint) (*sqlx.Rows, error) {
-	offset := page * 10
+	offset := (page - 1) * 10
 	sql := "select user_id, content, created_at from comments_tab where activity_id=? limit ? offset ?"
 	rows, err := DB.Queryx(sql, actId, 10, offset)
 	return rows, err

@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS user_tab(
     PRIMARY KEY(id),
     UNIQUE KEY uniq_name(name),
     UNIQUE KEY uniq_email(email)
-)default charset=utf8;
+) ENGINE-InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 //活动类型表
 CREATE TABLE IF NOT EXISTS activities_type_tab(
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS activities_type_tab(
     name VARCHAR(50) NOT NULL,
     PRIMARY KEY(id),
     UNIQUE KEY uniq_name(name)
-)default charset=utf8;
+) ENGINE-InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 //活动表
 CREATE TABLE IF NOT EXISTS activities_tab(
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS activities_tab(
     start_time INT UNSIGNED NOT NULL,
     end_time INT UNSIGNED NOT NULL,
     PRIMARY KEY(id)
-)default charset=utf8;
+) ENGINE-InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 //报名表
 CREATE TABLE IF NOT EXISTS form_tab(
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS form_tab(
     PRIMARY KEY(id),
     unique key uniq_act_user(activity_id, user_id)
     key key_user_id(user_id)
-)default charset=utf8;
+) ENGINE-InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 //评论表
 CREATE TABLE IF NOT EXISTS comments_tab(
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS comments_tab(
     created_at INT UNSIGNED NOT NULL,
     PRIMARY KEY(id)
     key key_act_id(activity_id)
-)default charset=utf8;
+) ENGINE-InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 //session表
@@ -61,4 +61,4 @@ CREATE TABLE IF NOT EXISTS session_tab(
     user_id INT UNSIGNED NOT NULL,
     PRIMARY KEY(id)
     UNIQUE key(user_id)
-)default charset=utf8;
+) ENGINE-InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -5,7 +5,7 @@ import (
 	"github.com/ZhuoshanLuo/entry_task/codes"
 	"github.com/ZhuoshanLuo/entry_task/dao"
 	"github.com/ZhuoshanLuo/entry_task/model"
-	"github.com/ZhuoshanLuo/entry_task/tool"
+	"github.com/ZhuoshanLuo/entry_task/utils"
 	"runtime/debug"
 )
 
@@ -25,20 +25,21 @@ import (
     "data": null
 }
 */
+//注册
 func doManageRegister(req model.RegisterMsg) model.Response {
 	name, passwd, email, avatar := req.Name, req.Passwd, req.Email, req.Avatar
 
 	//插入数据到user表中
 	var user model.User
 	user.Name, user.Avatar, user.Email = name, avatar, email
-	user.Passwd = tool.AddSalt(passwd)
+	user.Passwd = utils.AddSalt(passwd)
 	user.IsAdmin = true
-	user.CreatedAt = tool.GetTimeNowUnix()
+	user.CreatedAt = utils.GetTimeNowUnix()
 	userId, err := dao.InsertUser(user)
 
 	//插入数据库时发生错误
 	if err != nil {
-		tool.ErrorPrintln("sql insert into user table", 0, debug.Stack())
+		utils.ErrorPrintln("sql insert into user table", 0, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -48,7 +49,7 @@ func doManageRegister(req model.RegisterMsg) model.Response {
 	}
 
 	//注册成功
-	tool.InfoPrintln("insert into user table", userId)
+	utils.InfoPrintln("insert into user table", userId)
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,
@@ -71,14 +72,15 @@ func doManageRegister(req model.RegisterMsg) model.Response {
     "data": 1281784366
 }
 */
+//登陆
 func doManageLogin(req model.LoginMsg) model.Response {
 	name, reqPasswd := req.Name, req.Passwd
 
-	reqPasswd = tool.AddSalt(reqPasswd) //密码加盐
+	reqPasswd = utils.AddSalt(reqPasswd) //密码加盐
 	userId, passwd, err := dao.QueryUserIsExist(name)
 	//用户不存在
 	if err == sql.ErrNoRows {
-		tool.ErrorPrintln("sql user not exist", 0, debug.Stack())
+		utils.ErrorPrintln("sql user not exist", 0, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.UserNotExist,
@@ -99,7 +101,7 @@ func doManageLogin(req model.LoginMsg) model.Response {
 	//用户是否已经登陆
 	sessionId, err := dao.QueryUserIsLogin(userId)
 	if err != sql.ErrNoRows && err != nil {
-		tool.ErrorPrintln("sql query user is login error", userId, debug.Stack())
+		utils.ErrorPrintln("sql query user is login error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -119,12 +121,12 @@ func doManageLogin(req model.LoginMsg) model.Response {
 
 	//插入session数据库
 	var session model.Session
-	session.Id = tool.CreateSessionId(userId)
+	session.Id = utils.CreateSessionId(userId)
 	session.UserId = userId
 	err = dao.InsertSession(session)
 	//数据库插入时出错
 	if err != nil {
-		tool.ErrorPrintln("sql insert into session table error", userId, debug.Stack())
+		utils.ErrorPrintln("sql insert into session table error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -133,7 +135,7 @@ func doManageLogin(req model.LoginMsg) model.Response {
 		}
 	}
 	//登陆成功，返回sessoin
-	tool.InfoPrintln("insert into session table", session.UserId)
+	utils.InfoPrintln("insert into session table", session.UserId)
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,
@@ -161,6 +163,7 @@ func doManageLogin(req model.LoginMsg) model.Response {
     "data": null
 }
 */
+//添加活动
 func doAddActivity(req model.AddActivityRequest, userId uint) model.Response {
 	typeId, title, content := req.TypeId, req.Title, req.Content
 	location, start, end := req.Location, req.Start, req.End
@@ -171,7 +174,7 @@ func doAddActivity(req model.AddActivityRequest, userId uint) model.Response {
 	actObj.Location, actObj.StartTime, actObj.EndTime = location, start, end
 	err := dao.InsertActvity(actObj)
 	if err != nil {
-		tool.ErrorPrintln("sql insert into activity table error", userId, debug.Stack())
+		utils.ErrorPrintln("sql insert into activity table error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -180,7 +183,7 @@ func doAddActivity(req model.AddActivityRequest, userId uint) model.Response {
 		}
 	}
 
-	tool.InfoPrintln("insert into activity table", userId)
+	utils.InfoPrintln("insert into activity table", userId)
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,
@@ -202,6 +205,7 @@ func doAddActivity(req model.AddActivityRequest, userId uint) model.Response {
     "data": null
 }
 */
+//删除活动
 func doDelActivity(req model.DelActivityRequest, userId uint) model.Response {
 	actId := req.ActId
 
@@ -238,13 +242,14 @@ func doDelActivity(req model.DelActivityRequest, userId uint) model.Response {
     "data": null
 }
 */
+//编辑活动
 func doEditActivity(req model.EditActivityRequest, userId uint) model.Response {
 	id, typeId, title, content := req.Id, req.TypeId, req.Title, req.Content
 	location, start, end := req.Location, req.Start, req.End
 
 	err := dao.UpdateActivity(id, typeId, title, content, location, start, end)
 	if err != nil {
-		tool.ErrorPrintln("sql update activity table error", userId, debug.Stack())
+		utils.ErrorPrintln("sql update activity table error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -253,7 +258,7 @@ func doEditActivity(req model.EditActivityRequest, userId uint) model.Response {
 		}
 	}
 
-	tool.InfoPrintln("update actitivity table", userId)
+	utils.InfoPrintln("update actitivity table", userId)
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,
@@ -275,6 +280,7 @@ func doEditActivity(req model.EditActivityRequest, userId uint) model.Response {
     "data": null
 }
 */
+//添加活动类型
 func doAddActivityType(req model.AddActivityTypeRequest, userId uint) model.Response {
 	TypeName := req.TypeName
 
@@ -282,7 +288,7 @@ func doAddActivityType(req model.AddActivityTypeRequest, userId uint) model.Resp
 	obj.Name = TypeName
 	err := dao.InsertActivityType(obj)
 	if err != nil {
-		tool.ErrorPrintln("sql insert activity type table error", userId, debug.Stack())
+		utils.ErrorPrintln("sql insert activity type table error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -291,7 +297,7 @@ func doAddActivityType(req model.AddActivityTypeRequest, userId uint) model.Resp
 		}
 	}
 
-	tool.InfoPrintln("insert  actitivty type table", userId)
+	utils.InfoPrintln("insert  actitivty type table", userId)
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,
@@ -319,10 +325,12 @@ func doAddActivityType(req model.AddActivityTypeRequest, userId uint) model.Resp
     ]
 }
 */
-func doShowActivityType(userId uint) model.Response {
-	rows, err := dao.QueryAllActivityType()
+//显示所有活动类型
+func doShowActivityType(req model.ShowActivityTypeRequest, userId uint) model.Response {
+	page := req.Page
+	rows, err := dao.QueryAllActivityType(page)
 	if err != nil {
-		tool.ErrorPrintln("sql query all activity type", userId, debug.Stack())
+		utils.ErrorPrintln("sql query all activity type", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -336,7 +344,7 @@ func doShowActivityType(userId uint) model.Response {
 		var obj model.ShowActivityTypeResponse
 		err := rows.Scan(&obj.TypeName)
 		if err != nil {
-			tool.ErrorPrintln("sql scan type name", userId, debug.Stack())
+			utils.ErrorPrintln("sql scan type name", userId, debug.Stack())
 			return model.Response{
 				Status: model.CodeMsg{
 					Code: codes.MysqlError,
@@ -370,12 +378,13 @@ func doShowActivityType(userId uint) model.Response {
     "data": null
 }
 */
+//编辑活动类型
 func doEditActivityType(req model.EditActivityTypeRequest, userId uint) model.Response {
 	typeId, name := req.Id, req.Name
 
 	err := dao.UpdateActivityType(typeId, name)
 	if err != nil {
-		tool.ErrorPrintln("sql update activity type", userId, debug.Stack())
+		utils.ErrorPrintln("sql update activity type", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -384,7 +393,7 @@ func doEditActivityType(req model.EditActivityTypeRequest, userId uint) model.Re
 		}
 	}
 
-	tool.InfoPrintln("update activity type", userId)
+	utils.InfoPrintln("update activity type", userId)
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,
@@ -406,13 +415,14 @@ func doEditActivityType(req model.EditActivityTypeRequest, userId uint) model.Re
     "data": null
 }
 */
+//删除活动类型
 func doDelActivityType(req model.DelActivityTypeRequest, userId uint) model.Response {
 	typeId := req.Id
 
 	//删除活动类型
 	err := dao.DeleteActivityType(typeId)
 	if err != nil {
-		tool.ErrorPrintln("sql delete activity type", userId, debug.Stack())
+		utils.ErrorPrintln("sql delete activity type", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -420,7 +430,7 @@ func doDelActivityType(req model.DelActivityTypeRequest, userId uint) model.Resp
 			},
 		}
 	}
-	tool.InfoPrintln("delete activity type", userId)
+	utils.InfoPrintln("delete activity type", userId)
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,
@@ -452,11 +462,12 @@ func doDelActivityType(req model.DelActivityTypeRequest, userId uint) model.Resp
     ]
 }
 */
-func doShowAllUsers(userId uint) model.Response {
-
-	rows, err := dao.QueryAllUserMsg()
+//显示所有用户
+func doShowAllUsers(req model.ShowAllUsersRequest, userId uint) model.Response {
+	page := req.Page
+	rows, err := dao.QueryAllUserMsg(page)
 	if err != nil {
-		tool.ErrorPrintln("sql query all user msg", userId, debug.Stack())
+		utils.ErrorPrintln("sql query all user msg", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -470,7 +481,7 @@ func doShowAllUsers(userId uint) model.Response {
 		var obj model.UserPublicMsg
 		err := rows.Scan(&obj.Name, &obj.Email, &obj.Avatar)
 		if err != nil {
-			tool.ErrorPrintln("sql scan user msg error", userId, debug.Stack())
+			utils.ErrorPrintln("sql scan user msg error", userId, debug.Stack())
 			return model.Response{
 				Status: model.CodeMsg{
 					Code: codes.MysqlError,

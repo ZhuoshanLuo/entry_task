@@ -4,7 +4,7 @@ import (
 	"github.com/ZhuoshanLuo/entry_task/dao"
 	"github.com/ZhuoshanLuo/entry_task/model"
 	"github.com/ZhuoshanLuo/entry_task/svc"
-	"github.com/ZhuoshanLuo/entry_task/tool"
+	"github.com/ZhuoshanLuo/entry_task/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,11 +13,11 @@ func main() {
 
 	//读取配置参数
 	var conf model.Config
-	tool.GetConf(&conf)
+	utils.GetConf(&conf)
 	//连接数据库
 	dao.Init(conf.Database)
 	//打开日志
-	tool.InitLog()
+	utils.InitLog()
 
 	//用户接口
 	r.POST("/api/login", svc.Login)

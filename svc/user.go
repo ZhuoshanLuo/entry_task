@@ -5,7 +5,7 @@ import (
 	"github.com/ZhuoshanLuo/entry_task/codes"
 	"github.com/ZhuoshanLuo/entry_task/dao"
 	"github.com/ZhuoshanLuo/entry_task/model"
-	"github.com/ZhuoshanLuo/entry_task/tool"
+	"github.com/ZhuoshanLuo/entry_task/utils"
 	"github.com/gin-gonic/gin"
 	"runtime/debug"
 )
@@ -28,20 +28,22 @@ type Handler func(c *gin.Context) model.Response
     "data": null
 }
 */
+
+//注册
 func doRegister(req model.RegisterMsg) model.Response {
 	name, passwd, email, avatar := req.Name, req.Passwd, req.Email, req.Avatar
 
 	//插入数据到user表中
 	var user model.User
 	user.Name, user.Avatar, user.Email = name, avatar, email
-	user.Passwd = tool.AddSalt(passwd)
+	user.Passwd = utils.AddSalt(passwd)
 	user.IsAdmin = false
-	user.CreatedAt = tool.GetTimeNowUnix()
+	user.CreatedAt = utils.GetTimeNowUnix()
 	userId, err := dao.InsertUser(user)
 
 	//插入数据库时发生错误
 	if err != nil {
-		tool.ErrorPrintln("sql insert into user table", 0, debug.Stack())
+		utils.ErrorPrintln("sql insert into user table", 0, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -51,7 +53,7 @@ func doRegister(req model.RegisterMsg) model.Response {
 	}
 
 	//注册成功
-	tool.InfoPrintln("insert into user table", userId)
+	utils.InfoPrintln("insert into user table", userId)
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,
@@ -74,10 +76,11 @@ func doRegister(req model.RegisterMsg) model.Response {
     "data": 996231864
 }
 */
+//登陆
 func doLogin(req model.LoginMsg) model.Response {
 	name, passwd := req.Name, req.Passwd
 
-	passwd = tool.AddSalt(passwd) //密码加盐
+	passwd = utils.AddSalt(passwd) //密码加盐
 	userId, passwd, err := dao.QueryUserIsExist(name)
 	//用户不存在
 	if err == sql.ErrNoRows {
@@ -90,6 +93,7 @@ func doLogin(req model.LoginMsg) model.Response {
 	}
 	//操作数据库出错
 	if err != nil {
+		utils.ErrorPrintln("sql query user is login error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -110,7 +114,7 @@ func doLogin(req model.LoginMsg) model.Response {
 	//用户是否已经登陆
 	sessionId, err := dao.QueryUserIsLogin(userId)
 	if err != sql.ErrNoRows && err != nil {
-		tool.ErrorPrintln("sql query user is login error", userId, debug.Stack())
+		utils.ErrorPrintln("sql query user is login error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -119,6 +123,7 @@ func doLogin(req model.LoginMsg) model.Response {
 		}
 	}
 	if sessionId != 0 {
+		utils.InfoPrintln("user success login", sessionId)
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.OK,
@@ -130,12 +135,12 @@ func doLogin(req model.LoginMsg) model.Response {
 
 	//插入session数据库
 	var session model.Session
-	session.Id = tool.CreateSessionId(userId)
+	session.Id = utils.CreateSessionId(userId)
 	session.UserId = userId
 	err = dao.InsertSession(session)
 	//数据库插入时出错
 	if err != nil {
-		tool.ErrorPrintln("sql insert into session table error", userId, debug.Stack())
+		utils.ErrorPrintln("sql insert into session table error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -144,7 +149,7 @@ func doLogin(req model.LoginMsg) model.Response {
 		}
 	}
 	//登陆成功，返回sessoin
-	tool.InfoPrintln("insert into session table", session.UserId)
+	utils.InfoPrintln("user success login", session.UserId)
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,
@@ -178,7 +183,8 @@ func doLogin(req model.LoginMsg) model.Response {
     }
 }
 */
-func doShowActivities(req model.ShowActivtiyRequest, userId uint) model.Response {
+//显示所有活动
+func doShowActivities(req model.ShowActivtyRequest, userId uint) model.Response {
 	page := req.Page
 
 	//如果用户是登陆状态，传入sessionId不为空
@@ -188,7 +194,7 @@ func doShowActivities(req model.ShowActivtiyRequest, userId uint) model.Response
 	rows, err := dao.QueryALLActivityRows(page)
 	//查询时出错
 	if err != nil {
-		tool.ErrorPrintln("sql query activity table error", userId, debug.Stack())
+		utils.ErrorPrintln("sql query activity table error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -207,7 +213,7 @@ func doShowActivities(req model.ShowActivtiyRequest, userId uint) model.Response
 		if userId != 0 {
 			obj.JoinStatus, err = dao.IsJoinin(userId, actId)
 			if err != nil {
-				tool.ErrorPrintln("sql query user is joinin from form table error", userId, debug.Stack())
+				utils.ErrorPrintln("sql query user is joinin from form table error", userId, debug.Stack())
 				return model.Response{
 					Status: model.CodeMsg{
 						Code: codes.MysqlError,
@@ -257,6 +263,7 @@ func doShowActivities(req model.ShowActivtiyRequest, userId uint) model.Response
     }
 }
 */
+//活动选择器
 func doActivitiesSelector(req model.ActivitySelectorRequest, userId uint) model.Response {
 	actType, start, end, page := req.Type, req.Start, req.End, req.Page
 
@@ -266,7 +273,7 @@ func doActivitiesSelector(req model.ActivitySelectorRequest, userId uint) model.
 	//封装sql语句，得到符合条件的活动的行
 	rows, err := dao.SqlActivitiesSelector(actType, start, end, page)
 	if err != nil {
-		tool.ErrorPrintln("sql query activities by condition error", userId, debug.Stack())
+		utils.ErrorPrintln("sql query activities by condition error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -286,7 +293,7 @@ func doActivitiesSelector(req model.ActivitySelectorRequest, userId uint) model.
 		if userId != 0 {
 			obj.JoinStatus, err = dao.IsJoinin(userId, actId)
 			if err != nil {
-				tool.ErrorPrintln("sql query user is joinin from form table error", userId, debug.Stack())
+				utils.ErrorPrintln("sql query user is joinin from form table error", userId, debug.Stack())
 				return model.Response{
 					Status: model.CodeMsg{
 						Code: codes.MysqlError,
@@ -323,17 +330,18 @@ func doActivitiesSelector(req model.ActivitySelectorRequest, userId uint) model.
     "data": null
 }
 */
+//创建评论
 func doCreateComment(req model.CreateCommentRequest, userId uint) model.Response {
 	activityId, content := req.ActivityId, req.Content
 
 	//将数据插入comment表中
 	var comment model.Comment
 	comment.UserId, comment.ActivityId, comment.Content = userId, activityId, content
-	comment.CreatedAt = tool.GetTimeNowUnix()
+	comment.CreatedAt = utils.GetTimeNowUnix()
 	err := dao.InsertComment(comment)
 	//插入数据库表时出错
 	if err != nil {
-		tool.ErrorPrintln("sql insert into comment table error", userId, debug.Stack())
+		utils.ErrorPrintln("sql insert into comment table error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -342,7 +350,7 @@ func doCreateComment(req model.CreateCommentRequest, userId uint) model.Response
 		}
 	}
 
-	tool.InfoPrintln("insert into comment table", userId)
+	utils.InfoPrintln("insert into comment table", userId)
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,
@@ -371,11 +379,12 @@ func doCreateComment(req model.CreateCommentRequest, userId uint) model.Response
     }
 }
 */
+//显示加入的所用活动
 func doShowJoinedActivities(userId uint) model.Response {
 	//获取用户加入的所有活动的id
 	rows, err := dao.GetAllJoinActivities(userId)
 	if err != nil {
-		tool.ErrorPrintln("sql query all joinin activities error", userId, debug.Stack())
+		utils.ErrorPrintln("sql query all joinin activities error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -393,7 +402,7 @@ func doShowJoinedActivities(userId uint) model.Response {
 
 		obj.Title, obj.Start, obj.End, err = dao.QueryActivityMsg(actId)
 		if err != nil {
-			tool.ErrorPrintln("sql query activity msg error", userId, debug.Stack())
+			utils.ErrorPrintln("sql query activity msg error", userId, debug.Stack())
 			return model.Response{
 				Status: model.CodeMsg{
 					Code: codes.MysqlError,
@@ -428,6 +437,7 @@ func doShowJoinedActivities(userId uint) model.Response {
     "data": null
 }
 */
+//加入或退出活动
 func doJoinOrExit(req model.JoinOrExitRequest, userId uint) model.Response {
 	actId, action := req.ActivityId, req.Action
 
@@ -438,12 +448,12 @@ func doJoinOrExit(req model.JoinOrExitRequest, userId uint) model.Response {
 	} else {
 		var form model.Form
 		form.ActId, form.UserId = actId, userId
-		form.JoinedAt = tool.GetTimeNowUnix()
+		form.JoinedAt = utils.GetTimeNowUnix()
 		err = dao.InsertForm(form)
 	}
 	//操作数据库时出错
 	if err != nil {
-		tool.ErrorPrintln("sql when delete or insert into form table", userId, debug.Stack())
+		utils.ErrorPrintln("sql when delete or insert into form table", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: codes.MysqlError,
@@ -452,7 +462,7 @@ func doJoinOrExit(req model.JoinOrExitRequest, userId uint) model.Response {
 		}
 	}
 
-	tool.InfoPrintln("user join or exit activity success", userId)
+	utils.InfoPrintln("user join or exit activity success", userId)
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,
@@ -465,14 +475,14 @@ func doJoinOrExit(req model.JoinOrExitRequest, userId uint) model.Response {
 func GetActivityUserList(actId uint) (codes.Code, []model.UserPublicMsg) {
 	//活动id是必须的
 	if actId == 0 {
-		tool.ErrorPrintln("request parameters is empty", 0, nil)
+		utils.ErrorPrintln("request parameters is empty", 0, nil)
 		return codes.MissParameter, nil
 	}
 
 	//从form表中获取所有加入活动的用户id
 	rows, err := dao.QueryAllUsersId(actId)
 	if err != nil {
-		tool.ErrorPrintln("sql query user id error", 0, debug.Stack())
+		utils.ErrorPrintln("sql query user id error", 0, debug.Stack())
 		return codes.MysqlError, nil
 	}
 
@@ -483,14 +493,14 @@ func GetActivityUserList(actId uint) (codes.Code, []model.UserPublicMsg) {
 		var obj model.UserPublicMsg
 		err = rows.Scan(&userId)
 		if err != nil {
-			tool.ErrorPrintln("sql get user id error", 0, debug.Stack())
+			utils.ErrorPrintln("sql get user id error", 0, debug.Stack())
 			return codes.MysqlError, nil
 		}
 
 		row := dao.QueryUsersMsg(userId)
 		err := row.StructScan(&obj)
 		if err != nil {
-			tool.ErrorPrintln("sql query user msg error", 0, debug.Stack())
+			utils.ErrorPrintln("sql query user msg error", 0, debug.Stack())
 			return codes.MysqlError, nil
 		}
 
@@ -503,14 +513,14 @@ func GetActivityUserList(actId uint) (codes.Code, []model.UserPublicMsg) {
 func GetCommentsList(actId uint, page uint) (codes.Code, []model.CommentListResponse) {
 	//缺少活动的id参数
 	if actId == 0 {
-		tool.ErrorPrintln("request parameters is empty", 0, nil)
+		utils.ErrorPrintln("request parameters is empty", 0, nil)
 		return codes.MissParameter, nil
 	}
 
 	//在comment_tab表中获取user_id、content、created_time
 	rows, err := dao.QueryCommentMsg(actId, page)
 	if err != nil {
-		tool.ErrorPrintln("sql query comment msg", 0, debug.Stack())
+		utils.ErrorPrintln("sql query comment msg", 0, debug.Stack())
 		return codes.MysqlError, nil
 	}
 
@@ -522,7 +532,7 @@ func GetCommentsList(actId uint, page uint) (codes.Code, []model.CommentListResp
 
 		obj.Name, err = dao.QueryUserName(userId)
 		if err != nil {
-			tool.ErrorPrintln("sql query user name error", 0, debug.Stack())
+			utils.ErrorPrintln("sql query user name error", 0, debug.Stack())
 			return codes.MysqlError, nil
 		}
 
@@ -530,6 +540,30 @@ func GetCommentsList(actId uint, page uint) (codes.Code, []model.CommentListResp
 	}
 
 	return codes.OK, objects
+}
+
+//获取活动详情
+func GetActivityDetail(actId uint, userId uint) (*model.ActivityDetail, codes.Code) {
+	//查询活动信息
+	var actDetail model.ActivityDetail
+	row := dao.QueryActivityDetail(actId)
+	err := row.StructScan(&actDetail)
+	if err != nil {
+		utils.ErrorPrintln("sql query activity deltail error", userId, debug.Stack())
+		return nil, codes.MysqlError
+	}
+
+	//用户是否加入此活动
+	if userId != 0 {
+		actDetail.JoinStatus, err = dao.IsJoinin(userId, actId)
+		if err != nil {
+			utils.ErrorPrintln("sql query user is joinin", userId, debug.Stack())
+			return nil, codes.MysqlError
+		}
+	} else {
+		actDetail.JoinStatus = false
+	}
+	return &actDetail, codes.OK
 }
 
 /*
@@ -570,43 +604,22 @@ func GetCommentsList(actId uint, page uint) (codes.Code, []model.CommentListResp
 func doActivityInfo(req model.ActivityInfoRequest, userId uint) model.Response {
 	actId, page := req.ActivityId, req.CommentPage
 
-	//在activities表中查询活动信息
+	var code codes.Code
 	var obj model.ActivityInfoResponse
-	var actDetail model.ActivityDetail
-	row := dao.QueryActivityDetail(actId)
-	err := row.StructScan(&actDetail)
-	if err != nil {
-		tool.ErrorPrintln("sql query activity deltail error", userId, debug.Stack())
+	obj.ActivityDetail, code = GetActivityDetail(actId, userId)
+	if code != codes.OK {
 		return model.Response{
 			Status: model.CodeMsg{
-				Code: codes.MysqlError,
-				Msg:  codes.Errorf(codes.MysqlError),
+				Code: code,
+				Msg:  codes.Errorf(code),
 			},
 		}
 	}
-	obj.ActivityDetail = &actDetail
-
-	//用户是否加入此活动
-	if userId != 0 {
-		obj.JoinStatus, err = dao.IsJoinin(userId, actId)
-		if err != nil {
-			tool.ErrorPrintln("sql query user is joinin", userId, debug.Stack())
-			return model.Response{
-				Status: model.CodeMsg{
-					Code: codes.MysqlError,
-					Msg:  codes.Errorf(codes.MysqlError),
-				},
-			}
-		}
-	} else {
-		obj.JoinStatus = false
-	}
 
 	//查询加入activity id的所有用户
-	var code codes.Code
 	code, obj.UserList = GetActivityUserList(actId)
 	if code != codes.OK {
-		tool.ErrorPrintln("sql query user list error", userId, debug.Stack())
+		utils.ErrorPrintln("sql query user list error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: code,
@@ -618,7 +631,7 @@ func doActivityInfo(req model.ActivityInfoRequest, userId uint) model.Response {
 	//查询某个活动的评论列表
 	code, obj.CommentList = GetCommentsList(actId, page)
 	if code != codes.OK {
-		tool.ErrorPrintln("sql query comment list error", userId, debug.Stack())
+		utils.ErrorPrintln("sql query comment list error", userId, debug.Stack())
 		return model.Response{
 			Status: model.CodeMsg{
 				Code: code,
@@ -626,6 +639,7 @@ func doActivityInfo(req model.ActivityInfoRequest, userId uint) model.Response {
 			},
 		}
 	}
+
 	return model.Response{
 		Status: model.CodeMsg{
 			Code: codes.OK,

@@ -1,4 +1,4 @@
-package tool
+package utils
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ func Init() {
 }
 
 func newLogger(fp string) (*zap.SugaredLogger, error) {
-	file, err := os.Create(fp)
+	file, err := os.OpenFile(fp, os.O_WRONLY|os.O_APPEND, 0666)
 	writer := zapcore.AddSync(file) // 输出文件
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder // 修改时间戳的格式

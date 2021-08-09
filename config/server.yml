@@ -4,3 +4,8 @@ database:
   passwd: "Luo2566288"
   host: "127.0.0.1:3306"
   database: "et_db"
+
+cookie:
+  maxAge: 3600
+  path: ""
+  domain: "localhost"

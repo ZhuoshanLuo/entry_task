@@ -16,7 +16,7 @@ type LoginMsg struct {
 }
 
 //显示所有活动函数请求参数
-type ShowActivtiyRequest struct {
+type ShowActivtyRequest struct {
 	Page uint `json:"page"`
 }
 
@@ -86,4 +86,12 @@ type DelActivityTypeRequest struct {
 type EditActivityTypeRequest struct {
 	Id   uint   `json:"id"`
 	Name string `json:"name"`
+}
+
+type ShowActivityTypeRequest struct {
+	Page uint `json:"page"`
+}
+
+type ShowAllUsersRequest struct {
+	Page uint `json:"page"`
 }
